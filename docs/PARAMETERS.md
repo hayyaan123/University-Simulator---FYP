@@ -66,10 +66,6 @@ Walking between classes on its own is **not** a travelling salesman problem, bec
 | ✓ Tutorial length (min) | 30–180 | 60 | Fatigue, long days |
 | ✓ Gap between slots (min) | 0–30 | 10 | The main cause of lateness between far-apart classes |
 | ✓ Day starts / ends (hour) | 6–12 / 14–22 | 8 / 18 | Early-class skipping, long days |
-| Timetable compactness | 0–1 | 0.5 | Packed days (tiring, fewer trips to campus) vs spread days (gaps, more commuting) |
-| Max back-to-back classes | 1–6 | 3 | Fatigue, missed lunch |
-| Protected lunch hour | on / off | off | Lunch queues, afternoon fatigue |
-| Online / hybrid share | 0–100% | 10% | Fewer students on campus |
 
 ### Campus and movement
 
@@ -81,9 +77,7 @@ Walking between classes on its own is **not** a travelling salesman problem, bec
 | Path capacity | per path, in `campus.json` | from data | Bottlenecks on narrow paths |
 | Path closures | choose paths | none | Forces rerouting (shows the pathfinding working) |
 | ✓ Room capacity multiplier | 0.5–1.5 | 1.0 | Overfull rooms, students turned away |
-| Rain chance per day | 0–100% | 20% | Slower walking, more skipping, covered paths preferred |
 | Food outlets | 1–10 | 4 | Lunch queues |
-| Food service time (min per person) | 1–5 | 2 | Lunch queues, lateness after lunch |
 | Library seats | 50–2000 | 300 | Where students spend gaps |
 
 ### Behaviour
@@ -96,7 +90,6 @@ Walking between classes on its own is **not** a travelling salesman problem, bec
 | ✓ Base attendance chance | 0.3–1.0 | 0.85 | Overall attendance |
 | Friend influence | 0–1 | 0.3 | Skipping spreads through friend groups (friends = students who share units) |
 | Stress per deadline | 0–1 | 0.3 | How hard each deadline hits |
-| Fatigue per km walked | 0–0.2 | 0.05 | Tiredness from walking |
 | Fatigue per class hour | 0–0.2 | 0.03 | Tiredness from long days |
 | Burnout threshold | 0.5–1.0 | 0.85 | Stress level where students start to disengage |
 
@@ -121,7 +114,7 @@ Walking between classes on its own is **not** a travelling salesman problem, bec
 
 | Takes effect | Parameters | Why |
 | --- | --- | --- |
-| Straight away | Walking speed and spread, crowding strength, path closures, rain, food outlets and service time, library seats, all Behaviour parameters, staff absence rate, staff punctuality, sim speed | They only change how the next walk or decision plays out |
+| Straight away | Walking speed and spread, crowding strength, path closures, food outlets, library seats, all Behaviour parameters, staff absence rate, staff punctuality, sim speed | They only change how the next walk or decision plays out |
 | Next semester | Population, Semester and Timetable parameters, room capacity multiplier, tutors per unit, max teaching hours | They need a new timetable or a new intake, which are built at the start of a semester |
 
 The parameter panel should show which parameters are waiting for the next semester.
@@ -133,7 +126,6 @@ All the parameters above are planned. This is the order to build them in, based 
 **Tier 1: first, aim for Week 12**
 - Teaching weeks per semester, semesters per year, break between semesters: the continuous run needs them
 - New intake per year, course length: without them the population never changes
-- Timetable compactness, max back-to-back classes: they drive the scheduler directly
 - Tutors per unit, max teaching hours per staff member: staff clashes and limits make the scheduling realistic
 - Path closures: shows the pathfinding live (close a path, watch students reroute and get late)
 - Walking speed spread: one number that makes lateness realistic
@@ -145,15 +137,16 @@ All the parameters above are planned. This is the order to build them in, based 
 **Tier 2: next**
 - Commute mix, average commute: realistic, but need arrival modelling (train bursts, parking)
 - Friend influence: a strong emergent effect, but needs a friend network
-- Food service time: turns lunch into proper queues
-- Fatigue per km walked: links walking to behaviour
 - Mid-semester break, exam period, assessments per unit: cheap once the semester calendar exists
 - Staff absence rate, staff punctuality: cancellations and late starts
 
 **Tier 3: if there's time**
-- Rain chance per day
-- Part-time work, online / hybrid share, protected lunch hour
+- Part-time work
 - Fatigue per class hour
+
+## Considered and dropped
+
+The team dropped these on 2026-09-25: timetable compactness, max back-to-back classes, protected lunch hour, online / hybrid share, rain chance per day, food service time (a fixed named constant instead), fatigue per km walked.
 
 ## Effects (outputs)
 
