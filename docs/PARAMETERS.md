@@ -2,7 +2,15 @@
 
 **Status: proposal for team review.** Nothing new here is in the code yet. Parameters marked ✓ are already in `autoload/Params.gd`, and effects marked ✓ are already tracked in `autoload/Stats.gd`. Every new default is a starting guess. Arya checks it against a source before it goes into `Params.gd`.
 
-The goal is a campus you can adjust and then watch the effects play out over a whole simulated **semester**: 12 teaching weeks, a mid-semester break and the exam period. Results are shown per day, per week and at the end of the semester.
+## How a run works
+
+**The simulation never ends on its own.** It keeps running semester after semester until the user stops it (see decision #7 in `DECISIONS.md`).
+
+- Each semester has teaching weeks, a mid-semester break and an exam period, then a break before the next one.
+- At the end of every semester the dashboard shows a **semester report** and adds it to the history, so you can see trends across semesters.
+- Students move through their degree: each year some graduate, a new intake starts, and some drop out. Stress and motivation carry over between semesters.
+- You can change parameters while it runs. Some take effect straight away and others at the start of the next semester (see [When a change takes effect](#when-a-change-takes-effect)). The dashboard marks the semester where a parameter changed, so you can see the before and after.
+- Live stats (today, this week) keep updating in between semester reports.
 
 ## Algorithms we write ourselves
 
@@ -25,7 +33,9 @@ Walking between classes on its own is **not** a travelling salesman problem, bec
 
 | Parameter | Range | Default | What it changes |
 | --- | --- | --- | --- |
-| ✓ Students | 50–5000 | 500 | Crowding and room pressure |
+| ✓ Students (starting population) | 50–5000 | 500 | Crowding and room pressure |
+| New intake per year | 0–2000 | 170 | Population growth or shrinkage over the years |
+| Course length (years) | 2–5 | 3 | When students graduate |
 | ✓ Units | 5–60 | 20 | Timetable variety |
 | ✓ Units per student | 1–6 | 4 | Workload and stress |
 | Commute mix (walk / public transport / car / live on campus) | shares adding to 100% | 10 / 55 / 25 / 10 | Arrivals come in bursts (trains); a long commute makes a one-class day less worth it |
@@ -38,7 +48,9 @@ Walking between classes on its own is **not** a travelling salesman problem, bec
 
 | Parameter | Range | Default | What it changes |
 | --- | --- | --- | --- |
-| Teaching weeks (replaces ✓ days to simulate) | 1–15 | 12 | Length of the run |
+| Teaching weeks per semester (replaces ✓ days to simulate) | 1–15 | 12 | Length of each semester |
+| Semesters per year | 1–3 | 2 | How often reports appear and timetables change |
+| Break between semesters (weeks) | 0–12 | 4 | Stress recovery; the sim skips quickly through it because nothing is scheduled |
 | Mid-semester break | on / off | on | A week for stress to recover |
 | Exam period | on / off | on | Final stress peak, different campus use |
 | Assessments per unit | 1–6 | 3 | Number of stress spikes |
@@ -92,11 +104,21 @@ Walking between classes on its own is **not** a travelling salesman problem, bec
 | Parameter | Range | Default | What it changes |
 | --- | --- | --- | --- |
 | ✓ Sim minutes per second | 0.5–240 | 5 | Playback speed only |
-| ✓ Random seed | any int | 42 | Same seed + same parameters = same result |
+| ✓ Random seed | 0 or more | 42 | Same seed + same parameter changes at the same sim times = same result |
+| Stop after N semesters | 0–50 | 0 (never) | Headless runs and tests only (data logging, experiments). The normal app ignores it |
+
+### When a change takes effect
+
+| Takes effect | Parameters | Why |
+| --- | --- | --- |
+| Straight away | Walking speed and spread, crowding strength, path closures, rain, food outlets and service time, library seats, all Behaviour parameters, sim speed | They only change how the next walk or decision plays out |
+| Next semester | Population, Semester and Timetable parameters, room capacity multiplier | They need a new timetable or a new intake, which are built at the start of a semester |
+
+The parameter panel should show which parameters are waiting for the next semester.
 
 ## Effects (outputs)
 
-Shown per day and per week while the sim runs, and as a report at the end of the semester.
+Live values (today, this week) update while the sim runs. Each area below also goes into the **semester report** at the end of every semester, and the reports are kept so each effect can be charted across semesters.
 
 | Area | Effects |
 | --- | --- |
@@ -109,10 +131,16 @@ Shown per day and per week while the sim runs, and as a report at the end of the
 | Time use | Hours on campus, dead time between classes, commute time compared with class time |
 | Semester outcomes | Engagement score leading to pass / at-risk / fail bands, dropout risk, withdrawals. These link to the UCI Dropout dataset in Semester 2 |
 | Fairness | Any effect above split by group: commuters vs on-campus students, working vs not working, year level. Shows who a bad timetable hurts most |
+| Across semesters | Trend of every headline number per semester, population over time, retention of each intake (cohort), graduation rate, dropouts per semester, and markers showing where parameters were changed |
 
 ## What this needs in the code
 
-- **Semester-length runs:** add a week number to `SimTime`, repeat the weekly timetable, and replace the 7-day `days_to_simulate` limit.
-- **State that carries over:** stress, fatigue and motivation carry from day to day and week to week. `Student.gd` has `motivation` and `tiredness`, but nothing updates them yet.
-- **Speed:** 5,000 students over 12 weeks is millions of events. Measure the headless run time early.
+- **No end time:** `SimEngine` currently has an `end_time` and stops at midnight after `days_to_simulate` days. The app version runs with no end, and only headless runs use "Stop after N semesters".
+- **Schedule as you go:** `SimEngine.setup()` currently puts every class event in the queue at the start. An endless run can't do that, so each week (or semester) schedules the next one: a `WEEK_START` event queues that week's classes, and a `SEMESTER_START` / `SEMESTER_END` pair builds the timetable, runs intake and graduation, and sends the report.
+- **Calendar:** add week and semester numbers to `SimTime`. Time can stay as float minutes: GDScript floats are 64-bit, so years of minutes keep full precision.
+- **Stats per semester:** `Stats` keeps live counters plus a list of finished semester reports. A new `EventBus.semester_ended(report)` signal lets the dashboard and the CSV logger save each one.
+- **State that carries over:** stress, fatigue and motivation carry between days, weeks and semesters. `Student.gd` has `motivation` and `tiredness`, but nothing updates them yet.
+- **Changing students:** intake, graduation and dropout add and remove students while the sim runs, so MapView's MultiMesh and every per-student list must handle a changing population.
+- **Memory:** keep one summary per semester, not every event, so long runs don't keep growing.
+- **Speed:** one semester is about 5,000 students × 12 weeks, so millions of events. In the app it plays at the chosen speed, but headless runs must be fast enough to log many semesters. Measure early.
 - **Adding a parameter:** follow the rules in `CLAUDE.md`: a typed var plus a `SPECS` entry in `Params.gd`, the value in `data/scenarios/default.json`, and a source for the default.

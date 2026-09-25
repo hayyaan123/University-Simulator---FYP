@@ -4,6 +4,7 @@ A short record of key technical decisions and why we made them. Add new decision
 
 | # | Decision | Why | Alternatives considered |
 | --- | --- | --- | --- |
+| 7 | The simulation runs continuously, semester after semester, until the user stops it. Stats are reported at the end of each semester | It's a what-if tool with no end-game. Long-run effects (stress building up, dropouts, cohorts moving through years) only show up over many semesters, and users can change parameters and watch the next semesters respond | Fixed-length runs (one week or one semester) that end, then Reset |
 | 6 | GitHub repo with Issues + Project board | Repo already set up; Issues/board give us task tracking and evidence of project management | GitLab |
 | 5 | Semester 2 ML: small models run in GDScript from JSON first; Python sidecar only if time allows | No plugins, works on every machine, fast, easy to explain. The planned models (logistic regression, trees) are simple to evaluate by hand | Python sidecar only; GDExtension ONNX plugin (community-maintained, harder setup) |
 | 4 | Many small models, one per decision | Easier to train, test and explain than one large model | One combined model |
