@@ -33,6 +33,7 @@ docs/        Architecture, code style, contributing, data formats, roadmap, deci
 - [Code style](docs/CODE_STYLE.md)
 - [Contributing](docs/CONTRIBUTING.md): setup, branches, pull requests
 - [Data formats](docs/DATA_FORMATS.md): campus, units, scenarios, logs, ML models
+- [Parameters and effects](docs/PARAMETERS.md): what you can adjust and what the sim measures (proposal)
 - [Roadmap](docs/ROADMAP.md): scope, owners, sprints
 - [Decision log](docs/DECISIONS.md)
 
