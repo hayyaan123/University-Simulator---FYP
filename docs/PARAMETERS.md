@@ -9,6 +9,7 @@
 - Each semester has teaching weeks, a mid-semester break and an exam period, then a break before the next one.
 - At the end of every semester the dashboard shows a **semester report** and adds it to the history, so you can see trends across semesters.
 - Students move through their degree: each year some graduate, a new intake starts, and some drop out. Stress and motivation carry over between semesters.
+- **Lecturers and tutors are simulated too** (see decision #8 in `DECISIONS.md`). They have their own timetables and walk between classes, and a class can't start until its teacher arrives.
 - You can change parameters while it runs. Some take effect straight away and others at the start of the next semester (see [When a change takes effect](#when-a-change-takes-effect)). The dashboard marks the semester where a parameter changed, so you can see the before and after.
 - Live stats (today, this week) keep updating in between semester reports.
 
@@ -20,7 +21,7 @@ Our supervisor wants pathing, scheduling and walking distance coded by us, so we
 | --- | --- | --- |
 | Shortest path | Walking from one class to the next | Dijkstra from each building, stored as a lookup table (`Campus.gd`). A* once 3D floors add many more nodes |
 | Travelling salesman | **Errands in free time.** A student has 50 minutes before class and wants food, the library and the printer. Which stops, in what order, while still arriving on time? | Held-Karp (exact) for up to about 10 stops; nearest neighbour + 2-opt for more. With the class start as a deadline this is the *orienteering problem* (TSP with time windows) |
-| Scheduling | Building the timetable: no room double-bookings, no student clashes | Greedy graph colouring + backtracking, then local search to reduce gaps and long walks |
+| Scheduling | Building the timetable: no room double-bookings, no student clashes, no staff clashes, staff teaching-hour limits | Greedy graph colouring + backtracking, then local search to reduce gaps and long walks |
 | Congestion | Busy paths slow everyone down | BPR function from traffic engineering: `t = t0 * (1 + alpha * (flow / capacity) ^ beta)` |
 
 Walking between classes on its own is **not** a travelling salesman problem, because the timetable already fixes the order. The TSP appears when the student chooses the order, which is the errands case.
@@ -99,6 +100,15 @@ Walking between classes on its own is **not** a travelling salesman problem, bec
 | Fatigue per class hour | 0–0.2 | 0.03 | Tiredness from long days |
 | Burnout threshold | 0.5–1.0 | 0.85 | Stress level where students start to disengage |
 
+### Staff (lecturers and tutors)
+
+| Parameter | Range | Default | What it changes |
+| --- | --- | --- | --- |
+| Tutors per unit | 1–10 | 3 | Number of tutorial groups, and so tutorial size |
+| Max teaching hours per staff member per week | 4–20 | 12 | Scheduling pressure; staff teaching back-to-back across campus |
+| Staff absence rate | 0–10% | 2% | Cancelled classes and wasted student trips |
+| Staff punctuality (leave early by, min) | 0–15 | 5 | Classes starting late |
+
 ### Run
 
 | Parameter | Range | Default | What it changes |
@@ -111,10 +121,39 @@ Walking between classes on its own is **not** a travelling salesman problem, bec
 
 | Takes effect | Parameters | Why |
 | --- | --- | --- |
-| Straight away | Walking speed and spread, crowding strength, path closures, rain, food outlets and service time, library seats, all Behaviour parameters, sim speed | They only change how the next walk or decision plays out |
-| Next semester | Population, Semester and Timetable parameters, room capacity multiplier | They need a new timetable or a new intake, which are built at the start of a semester |
+| Straight away | Walking speed and spread, crowding strength, path closures, rain, food outlets and service time, library seats, all Behaviour parameters, staff absence rate, staff punctuality, sim speed | They only change how the next walk or decision plays out |
+| Next semester | Population, Semester and Timetable parameters, room capacity multiplier, tutors per unit, max teaching hours | They need a new timetable or a new intake, which are built at the start of a semester |
 
 The parameter panel should show which parameters are waiting for the next semester.
+
+## Build order
+
+All the parameters above are planned. This is the order to build them in, based on how much each one shows off the core work (pathing, scheduling, walking, continuous time), how visible its effect is, and how much it costs.
+
+**Tier 1: first, aim for Week 12**
+- Teaching weeks per semester, semesters per year, break between semesters: the continuous run needs them
+- New intake per year, course length: without them the population never changes
+- Timetable compactness, max back-to-back classes: they drive the scheduler directly
+- Tutors per unit, max teaching hours per staff member: staff clashes and limits make the scheduling realistic
+- Path closures: shows the pathfinding live (close a path, watch students reroute and get late)
+- Walking speed spread: one number that makes lateness realistic
+- Food outlets, library seats: give students places to go between classes, which is what creates the errands travelling-salesman problem
+- Deadline clustering, stress per deadline, resilience, burnout threshold: the smallest set that makes stress work
+- Lecture recordings available: one number with a big, well-documented effect on attendance
+- Motivation (mean / spread): needed to give students starting values anyway
+
+**Tier 2: next**
+- Commute mix, average commute: realistic, but need arrival modelling (train bursts, parking)
+- Friend influence: a strong emergent effect, but needs a friend network
+- Food service time: turns lunch into proper queues
+- Fatigue per km walked: links walking to behaviour
+- Mid-semester break, exam period, assessments per unit: cheap once the semester calendar exists
+- Staff absence rate, staff punctuality: cancellations and late starts
+
+**Tier 3: if there's time**
+- Rain chance per day
+- Part-time work, online / hybrid share, protected lunch hour
+- Fatigue per class hour
 
 ## Effects (outputs)
 
@@ -131,6 +170,7 @@ Live values (today, this week) update while the sim runs. Each area below also g
 | Time use | Hours on campus, dead time between classes, commute time compared with class time |
 | Semester outcomes | Engagement score leading to pass / at-risk / fail bands, dropout risk, withdrawals. These link to the UCI Dropout dataset in Semester 2 |
 | Fairness | Any effect above split by group: commuters vs on-campus students, working vs not working, year level. Shows who a bad timetable hurts most |
+| Staff | Classes starting late (and by how much), cancelled classes, student trips wasted on a cancelled class, staff teaching hours, staff walking distance |
 | Across semesters | Trend of every headline number per semester, population over time, retention of each intake (cohort), graduation rate, dropouts per semester, and markers showing where parameters were changed |
 
 ## What this needs in the code
@@ -141,6 +181,9 @@ Live values (today, this week) update while the sim runs. Each area below also g
 - **Stats per semester:** `Stats` keeps live counters plus a list of finished semester reports. A new `EventBus.semester_ended(report)` signal lets the dashboard and the CSV logger save each one.
 - **State that carries over:** stress, fatigue and motivation carry between days, weeks and semesters. `Student.gd` has `motivation` and `tiredness`, but nothing updates them yet.
 - **Changing students:** intake, graduation and dropout add and remove students while the sim runs, so MapView's MultiMesh and every per-student list must handle a changing population.
+- **Staff:** add a `Staff` class. Put the walking and location logic in a shared base class that `Student` and `Staff` both extend, so it's written once. There are only around 50–150 staff, so the cost is small.
+- **Class start depends on the teacher:** today a class starts at a fixed time (`CLASS_START`). With staff, the actual start is `max(scheduled start, teacher arrives)`, and student lateness is measured from the actual start. This touches the lateness rules in `SimEngine` and the timetable generator, so the engine and timetable owners agree on it first.
+- **Cancellations:** an absent teacher cancels the class. Students still walk there unless they find out first, and the trip counts as wasted.
 - **Memory:** keep one summary per semester, not every event, so long runs don't keep growing.
 - **Speed:** one semester is about 5,000 students × 12 weeks, so millions of events. In the app it plays at the chosen speed, but headless runs must be fast enough to log many semesters. Measure early.
 - **Adding a parameter:** follow the rules in `CLAUDE.md`: a typed var plus a `SPECS` entry in `Params.gd`, the value in `data/scenarios/default.json`, and a source for the default.
