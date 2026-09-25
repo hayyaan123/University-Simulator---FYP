@@ -186,7 +186,9 @@ func _on_student_arrive(student: Student, session: ClassSession) -> void:
 	EventBus.student_arrived.emit(student, session.building_id)
 
 	var minutes_late: float = maxf(0.0, now - session.start)
-	if minutes_late > Params.skip_threshold_minutes:
+	# The class may already be over when the walk is long and the class is short
+	# (CLASS_END was scheduled first, so it has run even on an exact tie).
+	if minutes_late > Params.skip_threshold_minutes or now >= session.end:
 		student.target_session = null
 		_set_state(student, Student.State.WAITING)
 		_skip(student, session, &"too_late")

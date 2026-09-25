@@ -88,6 +88,20 @@ func test_too_late_to_enter_counts_as_skip() -> void:
 	assert_eq(Stats.skipped_by_reason.get(&"too_late", 0), 1)
 
 
+func test_arriving_after_short_class_ended_counts_as_skip() -> void:
+	# 40 min late is under the 60 min threshold, but the 30 min class is already over.
+	Params.set_value(&"skip_threshold_minutes", 60.0)
+	campus.set_travel(&"B1", &"B2", 40.0)
+	var student: Student = _run([
+		_session(1, &"B1", 9, 0, 30.0),
+		_session(2, &"B2", 9, 30, 30.0),
+	] as Array[ClassSession])
+	assert_eq(student.attended_count, 1)
+	assert_eq(student.skipped_count, 1)
+	assert_eq(Stats.skipped_by_reason.get(&"too_late", 0), 1)
+	assert_eq(student.state, Student.State.OFF_CAMPUS)
+
+
 func test_skip_model_skips_everything() -> void:
 	var student: Student = _run([
 		_session(1, &"B1", 9, 0, 60.0),
