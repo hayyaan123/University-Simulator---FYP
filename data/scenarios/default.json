@@ -1,0 +1,23 @@
+{
+	"name": "Default week",
+	"params": {
+		"student_count": 500,
+		"unit_count": 20,
+		"units_per_student": 4,
+		"lecture_minutes": 120,
+		"tutorial_minutes": 60,
+		"slot_gap_minutes": 10,
+		"day_start_hour": 8,
+		"day_end_hour": 18,
+		"days_to_simulate": 5,
+		"room_capacity_multiplier": 1.0,
+		"walking_speed_m_per_min": 80.0,
+		"crowding_strength": 0.3,
+		"arrival_buffer_minutes": 5.0,
+		"late_grace_minutes": 5.0,
+		"skip_threshold_minutes": 20.0,
+		"base_attendance_chance": 0.85,
+		"sim_minutes_per_second": 5.0,
+		"random_seed": 42
+	}
+}

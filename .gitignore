@@ -1,0 +1,34 @@
+# Godot 4
+.godot/
+/android/
+*.translation
+export.cfg
+export_credentials.cfg
+*.tmp
+
+# Builds
+/build/
+*.exe
+*.pck
+*.zip
+
+# Test addon (each member installs GUT locally, see README)
+/addons/gut/
+
+# Python (tools/)
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Raw datasets and run logs (large; download or regenerate instead)
+/tools/datasets/
+/logs/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
