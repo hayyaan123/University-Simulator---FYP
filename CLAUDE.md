@@ -62,6 +62,7 @@ On Windows the executable is something like `Godot_v4.7.2-stable_win64.exe`. Use
 | How the sim works | docs/ARCHITECTURE.md |
 | Style rules | docs/CODE_STYLE.md |
 | JSON / CSV / model formats | docs/DATA_FORMATS.md |
+| Planned parameters and effects (proposal) | docs/PARAMETERS.md |
 | Who owns what, sprint tasks | docs/ROADMAP.md |
 | Why we chose X | docs/DECISIONS.md |
 | Setup, git, PRs | docs/CONTRIBUTING.md |
