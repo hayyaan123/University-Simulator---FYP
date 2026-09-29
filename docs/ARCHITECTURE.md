@@ -105,15 +105,19 @@ Adding a signal: add it to EventBus with typed arguments and a `##` comment, emi
 - `Campus` pre-computes all building-to-building distances once (Dijkstra from each building) so `travel_minutes` is a lookup.
 - The dashboard refreshes on `sim_time_changed` (once per frame), not per event.
 
-## Components still to build
+## Components
 
-| Component | File | Contract |
-| --- | --- | --- |
-| Campus loader + pathfinding | `sim/Campus.gd` | Implement the stubbed methods; keep the public API |
-| Timetable generator | `sim/TimetableGenerator.gd` | `generate(campus: Campus, rng: RandomNumberGenerator) -> {"sessions": Array[ClassSession], "students": Array[Student]}` using Params. No room double-booking; no student clashes; respects day start/end and slot gap |
-| Rule decisions | `decisions/RuleDecision.gd` | Extends DecisionModel |
-| Map view | `scenes/MapView.tscn` | Listens to EventBus; draws buildings, paths and students (MultiMesh) |
-| Parameter panel | `scenes/ParamPanel.tscn` | Built from `Params.SPECS`; Reset starts a new run |
-| Dashboard | `scenes/Dashboard.tscn` | Reads `Stats`; attendance, lateness, room use, crowding |
-| CSV logger | `sim/RunLogger.gd` | Listens to `student_decided` / outcomes; writes to `user://logs/` |
-| ML decisions | `decisions/MLDecision.gd`, `ml/` | See DATA_FORMATS.md, model JSON |
+First versions of the campus, timetable and map were built together so the whole loop runs end to end. The roadmap owners take these over and improve them.
+
+| Component | File | Status | Contract |
+| --- | --- | --- | --- |
+| Campus loader + pathfinding | `sim/Campus.gd` | First version (Hayyaan to take over) | Loads campus.json; Dijkstra from every building on load, so `distance_m()`, `path_between()` and `path_points()` are lookups. Keep the public API |
+| Campus data | `data/campus.json`, `tools/build_campus_from_osm.py` | First version (Shuyu to take over) | Monash University Malaysia from OpenStreetMap; rooms are placeholders |
+| Timetable generator | `sim/TimetableGenerator.gd` | First version (Hayyaan to take over) | `generate(campus, units, rng) -> {"sessions", "students"}` using Params. No room double-booking; no student clashes; classes start on the hour and end `slot_gap_minutes` early; repeat lecture streams for clashing students |
+| Map view | `scenes/MapView.gd` | First version (Siw to take over) | Listens to EventBus; draws buildings, paths and students (one MultiMesh); walkers follow `Campus.path_points()` |
+| Main scene + temporary HUD | `scenes/Main.gd` | Temporary | Builds a run; the HUD is replaced by ParamPanel and Dashboard |
+| Rule decisions | `decisions/RuleDecision.gd` | To build | Extends DecisionModel |
+| Parameter panel | `scenes/ParamPanel.tscn` | To build | Built from `Params.SPECS`; see docs/PARAMETERS.md |
+| Dashboard | `scenes/Dashboard.tscn` | To build | Reads `Stats`; attendance, lateness, room use, crowding |
+| CSV logger | `sim/RunLogger.gd` | To build | Listens to `student_decided` / outcomes; writes to `user://logs/` |
+| ML decisions | `decisions/MLDecision.gd`, `ml/` | Semester 2 | See DATA_FORMATS.md, model JSON |

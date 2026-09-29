@@ -41,6 +41,10 @@ docs/        Architecture, code style, contributing, data formats, roadmap, deci
 
 Peshaant (lead), Hayyaan, Siw, Shuyu, Arya. Supervised by Tan Choon Ling.
 
+## Map data
+
+The campus is Monash University Malaysia, built from OpenStreetMap data (© OpenStreetMap contributors, available under the [Open Database Licence](https://www.openstreetmap.org/copyright)). See `tools/build_campus_from_osm.py`.
+
 ## Datasets (Semester 2)
 
 - Kuzilek, J., Hlosta, M., & Zdrahal, Z. (2017). Open University Learning Analytics dataset. *Scientific Data, 4*, 170171.
