@@ -1,6 +1,6 @@
 # Parameters and effects
 
-**Status: proposal for team review.** Nothing new here is in the code yet. Parameters marked ✓ are already in `autoload/Params.gd`, and effects marked ✓ are already tracked in `autoload/Stats.gd`. Every new default is a starting guess. Arya checks it against a source before it goes into `Params.gd`.
+**Status: final list of 46 parameters.** Our supervisor agreed on 2026-09-29 that we stop at these (decision #9 in `DECISIONS.md`), so don't add new ones without checking with the team first. Nothing new here is in the code yet. Parameters marked ✓ are already in `autoload/Params.gd`, and effects marked ✓ are already tracked in `autoload/Stats.gd`. Every new default is a starting guess. Arya checks it against a source before it goes into `Params.gd`.
 
 ## How a run works
 
