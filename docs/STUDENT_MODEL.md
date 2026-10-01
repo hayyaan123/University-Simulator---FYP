@@ -1,6 +1,6 @@
 # Student model
 
-How a student's grades, stress, energy and satisfaction change, and how those states change what the student does. This is the design agreed on 2026-10-01 (decisions #11 to #13 in `DECISIONS.md`). None of it is in the code yet.
+How a student's grades, stress, energy and satisfaction change, and how those states change what the student does. This is the design agreed on 2026-10-01 (decisions #11 to #13 in `DECISIONS.md`). The states, the effects table and the skip rule are in the code; see [In the code](#in-the-code) for what is still to build.
 
 ## The four states
 
@@ -88,7 +88,7 @@ The last three rows were added on 2026-10-01 (decision #18) so that Room capacit
 
 A determinant costs two things:
 
-1. **One row in the effects table** (below), with a number per state and a source or stated assumption for each number.
+1. **One row in the effects table** (`EFFECTS` in `sim/students/StateEffects.gd`), with a number per state and a source or stated assumption for each number.
 2. **The sim has to notice the event.** Most are already events the engine handles (attended, skipped, arrived late, walked). Some need a small check, such as counting today's classes.
 
 Keep the table short. Every number needs a justification, so fewer rows is better for v1.
@@ -99,32 +99,25 @@ Nobody writes "if the day starts at 7am, lower attendance". A scenario is a save
 
 If a result looks wrong, change a number in the effects table. Don't add a special case.
 
-## What this needs in the code
+## In the code
 
-Planned shape, to be built in Sprint 3 (see `ROADMAP.md`). File locations follow `ARCHITECTURE.md`.
+**Built**
 
-- **`sim/students/Student.gd`:** replace `motivation` and `tiredness` with `stress`, `energy` and `satisfaction` (0–100), add `resilience` and `commute_minutes`, and keep hours attended and hours studied per unit.
-- **`sim/students/StateEffects.gd` (new):** the effects table as data, plus one `apply(student, event)` function. This is the only place that changes stress, energy and satisfaction.
+- **`sim/students/Student.gd`** has `stress`, `energy`, `satisfaction` and `resilience` (0 to 100), `commute_minutes`, plus hours attended and hours studied per unit. The timetable generator gives each student their own commute and resilience, spread around the two parameters.
+- **`sim/students/StateEffects.gd`** holds the effects table (`EFFECTS`) and `apply(student, event, amount)`. It is the only place that changes stress, energy and satisfaction, and the only place the numbers live. **Every number in it is a placeholder** until it has a source.
+- **`sim/core/SimEngine.gd`** calls `apply()` for the rows it can already see: hours of class attended, skipping, arriving late, walking, back-to-back classes, and the commute and early start. Energy is restored at the start of each day, before the commute is taken off.
+- **`decisions/RuleDecision.gd`** is rule 3: `skip_chance(student)` rises as energy falls below a threshold and again when the student is burned out. The app uses it.
+- **`decisions/DecisionContext.gd`**: `to_features()` now carries the states in place of `motivation` and `tiredness`.
+- **Tests:** `tests/unit/test_state_effects.gd` checks every row and rule 1 (a row never changes a state it doesn't name). `test_sim_engine.gd` and `test_rule_decision.gd` cover the engine hooks and the skip rule.
 
-  ```gdscript
-  ## event -> {state: change}. Placeholder numbers: each needs a source.
-  const EFFECTS: Dictionary = {
-  	&"attended_class_hour": {&"stress": 0.5, &"energy": -4.0},
-  	&"studied_hour": {&"energy": -3.0},
-  	&"skipped_class": {&"energy": 2.0},
-  	&"arrived_late": {&"stress": 1.0, &"satisfaction": -1.0},
-  	&"deadline_near": {&"stress": 2.0},
-  	&"walked_minute": {&"energy": -0.2},
-  	&"food_stop": {&"energy": 10.0, &"satisfaction": 1.0},
-  	&"break_day": {&"stress": -3.0, &"energy": 5.0, &"satisfaction": 1.0},
-	&"turned_away": {&"stress": 1.0, &"satisfaction": -3.0},
-	&"queued_minute": {&"satisfaction": -0.2},
-	&"back_to_back_class": {&"stress": 0.5, &"energy": -1.0},
-  }
-  ```
+**Not built yet**
 
-- **`sim/timetable/Assessment.gd` (new):** a unit, a due week and a weight. The mark is worked out from hours put in when the assessment falls due.
-- **`decisions/RuleDecision.gd` (new):** the skip chance rises when energy is low or stress is above resilience (rule 3). It also picks what to do in free time: study, get food, or wait.
-- **`decisions/DecisionContext.gd`:** `to_features()` swaps `motivation` and `tiredness` for the new states. No data has been logged yet, so the keys can still change.
-- **`autoload/Stats.gd`:** keeps the average of each state and writes them into the semester report.
-- **Tests:** one GUT test per row of the effects table, and one that checks rule 1 (changing one state never changes another).
+| Row or feature | Waiting for |
+| --- | --- |
+| Hours of study, food stop, queueing | The errand planner and food outlets |
+| Deadlines approaching, grades | Assessments (`sim/timetable/Assessment.gd`): a unit, a due week and a weight; the mark comes from hours put in |
+| Breaks | The semester calendar |
+| Turned away from a full room | A capacity check when a student arrives |
+| State averages in `Stats` and the semester report | The dashboard work |
+
+Until deadlines exist, stress only rises slowly from class hours, so burnout does not happen in a normal run.

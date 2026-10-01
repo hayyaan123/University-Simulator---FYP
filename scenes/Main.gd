@@ -50,14 +50,21 @@ func _start_run() -> void:
 	var sessions: Array[ClassSession] = result["sessions"]
 	_students = result["students"]
 	_map.setup(_campus, _students)
-	_runner.start_run(_campus, sessions, _students, DecisionModel.new())
+	_runner.start_run(_campus, sessions, _students, RuleDecision.new())
 	_runner.engine.advance_to(SimTime.at(0, Params.day_start_hour) - LEAD_IN_MINUTES)
 
 
 func _stats_text() -> String:
 	var counts: Dictionary = {}
+	var stress: float = 0.0
+	var energy: float = 0.0
+	var satisfaction: float = 0.0
 	for student: Student in _students:
 		counts[student.state] = int(counts.get(student.state, 0)) + 1
+		stress += student.stress
+		energy += student.energy
+		satisfaction += student.satisfaction
+	var total: float = maxf(1.0, float(_students.size()))
 	return "\n".join([
 		"Students: %d" % _students.size(),
 		"  walking: %d" % counts.get(Student.State.TRAVELLING, 0),
@@ -69,6 +76,10 @@ func _stats_text() -> String:
 		"Skipped: %d" % Stats.skipped,
 		"Attendance: %.1f%%" % (Stats.attendance_rate() * 100.0),
 		"Average minutes late: %.1f" % Stats.average_minutes_late(),
+		"",
+		"Average stress: %.1f" % (stress / total),
+		"Average energy: %.1f" % (energy / total),
+		"Average satisfaction: %.1f" % (satisfaction / total),
 	])
 
 

@@ -207,7 +207,7 @@ func scenery_outlines() -> Array[PackedVector2Array]:
 func travel_minutes(from_building: StringName, to_building: StringName) -> float:
 	if from_building == to_building:
 		return 0.0
-	return distance_m(from_building, to_building) / maxf(Params.walking_speed_m_per_min, 1.0)
+	return distance_m(from_building, to_building) / FixedSettings.WALKING_SPEED_M_PER_MIN
 
 
 func _clear() -> void:

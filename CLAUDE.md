@@ -6,7 +6,7 @@ Context for Claude Code when working in this repo. Read this first, then the doc
 
 Campus Simulator (repo name: University-Simulator---FYP) is a Monash final year project (FIT3161/FIT3163/FIT3188). It is a **discrete-event campus simulation** in **Godot 4.7 + GDScript**. Students follow timetables, walk between buildings (so travel time can make them late), and decide whether to attend. 15 adjustable parameters change what students do, which moves four student states (grades, stress, energy, satisfaction). Their averages are reported at the end of every semester. There is no end-game: it's a what-if tool.
 
-- **Semester 1 (now):** rule-based prototype due at Week 12. Built so far: campus map, timetable generator, walking, lateness, attendance. Not built yet: student states, errands, assessments, the semester calendar, the parameter panel and dashboard.
+- **Semester 1 (now):** rule-based prototype due at Week 12. Built so far: campus map, timetable generator, walking, lateness, attendance, student states (stress, energy, satisfaction), rule-based skipping. Not built yet: grades, errands, assessments, the semester calendar, the parameter panel and dashboard.
 - **Semester 2:** small ML models (logistic regression, decision trees) trained in Python on OULAD / UCI Dropout data plus sim logs, exported to JSON, and **run in GDScript** (`MLDecision.gd`). A Python sidecar comes later, only if time allows. We don't use ONNX, C#, or GDExtension plugins.
 - The technical contribution is the scheduling, travel time and continuous-time mechanics, plus the algorithms we write ourselves (Dijkstra, knapsack, TSP). Visuals support the explanation; they don't replace it.
 
@@ -29,7 +29,8 @@ On Windows the executable is something like `Godot_v4.7.2-stable_win64.exe`. Use
 
 - Time is a `float` in minutes from Monday 00:00 (`SimTime`).
 - `SimEngine` (RefCounted) owns the `EventQueue` (min-heap on time, then seq) and applies the travel, lateness and attendance rules. It has **no Node, scene or UI dependencies**.
-- `DecisionModel.decide(student, context, rng) -> Action` (`ATTEND_NEXT`, `SKIP_NEXT`, `LEAVE_CAMPUS`). The model decides *what*; the engine decides *when* and *how long*. Rules and ML models both extend this class.
+- `DecisionModel.decide(student, context, rng) -> Action` (`ATTEND_NEXT`, `SKIP_NEXT`, `LEAVE_CAMPUS`). The model decides *what*; the engine decides *when* and *how long*. `RuleDecision` (used by the app) and later ML models extend this class.
+- `StateEffects` (`sim/students/`) holds the determinants table and is the **only** place that changes a student's stress, energy and satisfaction. The engine calls `StateEffects.apply(student, event, amount)`. Its numbers are placeholders until each has a source.
 - `DecisionContext.to_features()` is the single feature vector used for decisions, logging and ML training. Don't rename its keys once data has been logged.
 - Autoloads: `Params` (all adjustable values plus `SPECS` for ranges and UI), `EventBus` (all cross-system signals), `Stats` (aggregates from signals).
 - `SimRunner` (Node) drives the engine in real time. Tests and headless runs call `engine.advance_to()` / `engine.run_to_end()` directly.
@@ -41,7 +42,7 @@ On Windows the executable is something like `Godot_v4.7.2-stable_win64.exe`. Use
 
 - Follow **docs/CODE_STYLE.md**: static typing everywhere, PascalCase file names that match `class_name`, snake_case members, `_private`, `##` doc comments, tabs.
 - **All randomness goes through the run's `RandomNumberGenerator`** (`engine.rng`, passed to decision models). Never use `randf()`, `randi()` or `randomize()`.
-- **No magic numbers.** The 15 agreed parameters (docs/PARAMETERS.md) are `Params` vars with a `SPECS` entry (and go in `data/scenarios/default.json`). Don't add a parameter that isn't on that list without asking. Fixed constants are named, with their source in a comment.
+- **No magic numbers.** The 15 agreed parameters (docs/PARAMETERS.md) are `Params` vars with a `SPECS` entry (and go in `data/scenarios/default.json`). Don't add a parameter that isn't on that list without asking. Add a parameter to `Params` only when something reads it. Values that are not experiment levers go in `sim/core/FixedSettings.gd`, named, with their source in a comment.
 - A new signal goes in `EventBus.gd` with typed arguments and gets listed in docs/ARCHITECTURE.md.
 - A change to a data format goes in the same change as `docs/DATA_FORMATS.md`.
 - Every rule change in `sim/` or `decisions/` needs a GUT test in `tests/unit/`. Use `FakeCampus` / `FixedDecision` from `tests/helpers/`.

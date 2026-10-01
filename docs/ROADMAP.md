@@ -14,8 +14,8 @@ The tiers follow the first-meeting whiteboard and the supervisor's feedback on 2
 | Must | Student agents, each with their own timetable, moving between rooms | 1 | Built |
 | Must | Travel between classes: shortest path, on time / late / too late | 1 | Built |
 | Must | Simulation clock: play, pause, speed, fixed random seed | 1 | Built (temporary HUD) |
-| Must | Student states: grades, stress, energy, satisfaction | 1 | To build |
-| Must | Rule-based decisions: attend, skip, study, get food, leave campus | 1 | To build |
+| Must | Student states: grades, stress, energy, satisfaction | 1 | Built, except grades; numbers are placeholders |
+| Must | Rule-based decisions: attend, skip, study, get food, leave campus | 1 | Attend, skip and leave built; study and food to build |
 | Must | Assessments and deadlines; grades measured at each assessment | 1 | To build |
 | Must | Errands in free time: knapsack picks the stops, TSP orders them | 1 | To build |
 | Must | Continuous run across semesters: calendar, breaks, exam period | 1 | To build |
@@ -56,7 +56,7 @@ Sprints 1 and 2 are mostly done. First versions of the campus, timetable generat
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Skeleton runs | Project setup, Params/EventBus/Stats, EventQueue, SimEngine core (**done**) | `Campus.gd`: load JSON, graph, Dijkstra (**first version done**) | Main scene, MapView draws buildings and paths (**first version done**) | `campus.json` (**done**, from OpenStreetMap) | Default values with sources |
 | 2 | Students move | Run bootstrapped in Main; engine hooked to MapView (**done**) | `TimetableGenerator.gd`, no clashes (**first version done**) | Students drawn with MultiMesh (**done**); play/pause/speed in the real UI | `units.json` checked against the handbook; clash test cases | Test runs, bug reports, map art |
-| 3 | States + errands | Student states and `StateEffects`; `RuleDecision` (attend, skip, study, food, leave); trim `Params` to the 11 Must parameters | `ErrandPlanner` (knapsack + TSP); food outlets with queues; room allocation as knapsack; students turned away from full rooms | `Stats` for the four states; Dashboard charts | Food outlets and assessments in the data files; GUT tests for errands and state effects | A source or stated assumption for every effect size; check results against expected values |
+| 3 | States + errands | Student states and `StateEffects` (**done**); `RuleDecision`: attend, skip, leave (**done**), study and food (with the errand planner); `Params` trimmed to the agreed list, with commute and resilience added (**done**) | `ErrandPlanner` (knapsack + TSP); food outlets with queues; room allocation as knapsack; students turned away from full rooms | `Stats` for the four states; Dashboard charts | Food outlets and assessments in the data files; GUT tests for errands and state effects | A source or stated assumption for every effect size; check results against expected values |
 | 4 | Semesters + parameters | `Calendar`: weeks, breaks, exams, week-by-week scheduling, no end time; assessments and grades; 5,000-student performance | Path closures with rerouting; edge cases | ParamPanel from `Params.SPECS`; semester report screen | Calendar presets; demo scenarios (normal semester, clustered deadlines, early starts with long commutes) | Demo script, screenshots, report figures |
 
 If time runs short, cut in this order: path closures, the Trimester preset, yearly intake and graduation. The four states and the 11 parameters stay.

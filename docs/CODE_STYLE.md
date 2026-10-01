@@ -43,7 +43,7 @@ Leave two blank lines between functions and use tabs for indentation (see `.edit
 
 ## Rules for this project
 
-- **No magic numbers.** Anything a user might tune goes in `Params`. Fixed values are named constants with a comment saying where they come from.
+- **No magic numbers.** The agreed parameters go in `Params`. Other values are named constants with a comment saying where they come from; ones shared across files go in `sim/core/FixedSettings.gd`.
 - **All randomness goes through the run's `RandomNumberGenerator`.** Never call `randf()`, `randi()` or `randomize()`. Otherwise runs can't be repeated.
 - **Core code has no Node or UI dependency.** `sim/` and `decisions/` extend `RefCounted` and only talk to Params and EventBus.
 - **UI never changes simulation state directly.** It changes Params and calls SimRunner (play, pause, reset).
