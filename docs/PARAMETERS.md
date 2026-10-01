@@ -1,6 +1,6 @@
 # Parameters and effects
 
-**Status: proposal for team review.** Nothing new here is in the code yet. Parameters marked ✓ are already in `autoload/Params.gd`, and effects marked ✓ are already tracked in `autoload/Stats.gd`. Every new default is a starting guess. Arya checks it against a source before it goes into `Params.gd`.
+**Status: final list of 44 parameters** (decision #9 in `DECISIONS.md`). Don't add new ones without checking with the team first. Nothing new here is in the code yet. Parameters marked ✓ are already in `autoload/Params.gd`, and effects marked ✓ are already tracked in `autoload/Stats.gd`. Every new default is a starting guess. Arya checks it against a source before it goes into `Params.gd`.
 
 ## How a run works
 
@@ -30,115 +30,103 @@ Walking between classes on its own is **not** a travelling salesman problem, bec
 
 ## Parameters
 
-### Population
+44 in total: **39 simulation parameters** (12 on the main panel, 5 set by the calendar preset, 22 under Advanced settings) plus **5 controls, map and test settings**. Names match the parameter screen. ✓ = already in `autoload/Params.gd` (sometimes under a code name, e.g. `room_capacity_multiplier`).
 
-| Parameter | Range | Default | What it changes |
-| --- | --- | --- | --- |
-| ✓ Students (starting population) | 50–5000 | 500 | Crowding and room pressure |
-| New intake per year | 0–2000 | 170 | Population growth or shrinkage over the years |
-| Course length (years) | 2–5 | 3 | When students graduate |
-| ✓ Units | 5–60 | 20 | Timetable variety |
-| ✓ Units per student | 1–6 | 4 | Workload and stress |
-| Commute mix (walk / public transport / car / live on campus) | shares adding to 100% | 10 / 55 / 25 / 10 | Arrivals come in bursts (trains); a long commute makes a one-class day less worth it |
-| Average commute (min) | 5–120 | 45 | Skipping days with only one class |
-| Part-time work (hours per week) | 0–30 | 10 | Fatigue, less free time, more skipping |
-| Motivation (mean / spread) | 0–1 | 0.7 / 0.15 | Baseline attendance |
-| Resilience (mean / spread) | 0–1 | 0.5 / 0.2 | How fast stress builds up and recovers |
+**When** says when a change during a run takes effect: **Now** (the next walk or decision), or **Next sem** (the next semester, because it needs a new timetable or intake).
 
-### Semester
+### Main panel (12)
 
-| Parameter | Range | Default | What it changes |
-| --- | --- | --- | --- |
-| Teaching weeks per semester (replaces ✓ days to simulate) | 1–15 | 12 | Length of each semester |
-| Semesters per year | 1–3 | 2 | How often reports appear and timetables change |
-| Break between semesters (weeks) | 0–12 | 4 | Stress recovery; the sim skips quickly through it because nothing is scheduled |
-| Mid-semester break | on / off | on | A week for stress to recover |
-| Exam period | on / off | on | Final stress peak, different campus use |
-| Assessments per unit | 1–6 | 3 | Number of stress spikes |
-| Deadline clustering | 0–1 | 0.5 | 0 = deadlines spread across the semester, 1 = all units due in the same weeks |
-| Lecture recordings available | 0–100% | 80% | Lecture attendance drops when recordings exist |
+| # | Parameter | Range | Default | When | Why we chose it |
+| --- | --- | --- | --- | --- | --- |
+| 1 | ✓ Students | 50–5000 | 500 | Next sem | "What if enrolments grow?" Drives crowding and room pressure |
+| 2 | New intake per year | 0–2000 | 170 | Next sem | The sim never ends, so new students must arrive or the population never changes |
+| 3 | ✓ Gap between slots | 0–30 min | 10 | Next sem | The time students have to walk between classes. The main lateness lever |
+| 4 | ✓ Lecture length | 30–180 min | 120 | Next sem | "Are 2-hour lectures too long?" Fatigue and long days |
+| 5 | ✓ Day starts | 6–12 (hour) | 8 | Next sem | "Do 8am classes hurt attendance?" |
+| 6 | ✓ Walking speed | 40–120 m/min | 80 | Now | Turns walking distance into travel time, the core mechanic |
+| 7 | ✓ Room capacity | 0.5–1.5 × | 1.0 | Next sem | "What if rooms are smaller?" Overfull rooms, students turned away |
+| 8 | Deadline clustering | 0–1 | 0.5 | Next sem | Deadlines bunch up in weeks 10–12 in real semesters. The main stress lever (0 = spread out, 1 = all in the same weeks) |
+| 9 | Lecture recordings | 0–100% | 80% | Next sem | A common real reason students skip lectures |
+| 10 | Food outlets | 1–10 | 4 | Now | Places to go between classes, which creates the travelling-salesman errands, plus lunch queues |
+| 11 | Tutors per unit | 1–10 | 3 | Next sem | A real limit on how many tutorial groups a unit can run, and so on tutorial size |
+| 12 | Staff absence rate | 0–10% | 2% | Now | Cancelled classes and wasted student trips. Happens every semester |
 
-### Timetable
+### Calendar (5), set by one preset dropdown
 
-| Parameter | Range | Default | What it changes |
-| --- | --- | --- | --- |
-| ✓ Lecture length (min) | 30–180 | 120 | Fatigue, long days |
-| ✓ Tutorial length (min) | 30–180 | 60 | Fatigue, long days |
-| ✓ Gap between slots (min) | 0–30 | 10 | The main cause of lateness between far-apart classes |
-| ✓ Day starts / ends (hour) | 6–12 / 14–22 | 8 / 18 | Early-class skipping, long days |
+| # | Parameter | Monash standard | Trimester | Why we chose it |
+| --- | --- | --- | --- | --- |
+| 13 | Teaching weeks per semester (replaces ✓ days to simulate) | 12 | 10 | Core of the calendar. The sim reports at the end of every semester |
+| 14 | Semesters per year | 2 | 3 | How often reports and new timetables happen |
+| 15 | Break between semesters (weeks) | 4 | 2 | Stress recovers between semesters. The sim skips quickly through it because nothing is scheduled |
+| 16 | Mid-semester break | on | off | A real recovery week. Shows how breaks affect stress |
+| 17 | Exam period | on | on | The final stress peak of each semester |
 
-### Campus and movement
+All five take effect at the next semester. The preset values are starting guesses for Arya to check.
 
-| Parameter | Range | Default | What it changes |
-| --- | --- | --- | --- |
-| ✓ Walking speed (m/min) | 40–120 | 80 | Travel time |
-| Walking speed spread (m/min) | 0–30 | 10 | Some students are always slower and more often late |
-| ✓ Crowding strength | 0–1 | 0.3 | How much busy paths slow people down (alpha in the BPR function) |
-| Path capacity | per path, in `campus.json` | from data | Bottlenecks on narrow paths |
-| Path closures | choose paths | none | Forces rerouting (shows the pathfinding working) |
-| ✓ Room capacity multiplier | 0.5–1.5 | 1.0 | Overfull rooms, students turned away |
-| Food outlets | 1–10 | 4 | Lunch queues |
-| Library seats | 50–2000 | 300 | Where students spend gaps |
+### Advanced settings (22)
 
-### Behaviour
+| # | Parameter | Range | Default | When | Why we chose it |
+| --- | --- | --- | --- | --- | --- |
+| | **Population** | | | | |
+| 18 | ✓ Units | 5–60 | 20 | Next sem | How varied the timetable is, and so how hard it is to schedule without clashes |
+| 19 | ✓ Units per student | 1–6 | 4 | Next sem | Each student's workload. Feeds stress and clashes |
+| 20 | Course length | 2–5 years | 3 | Next sem | When students graduate. Keeps the population moving with New intake per year |
+| 21 | Commuters by public transport | 0–100% | 55% | Next sem | Long-distance commuters skip days with only one class, and trains and buses make arrivals come in bursts at the BRT station. The rest walk, drive or live on campus in fixed shares |
+| 22 | Average commute | 5–120 min | 45 | Next sem | Decides whether coming in for a single class is "worth it" |
+| 23 | Part-time work | 0–30 hrs/week | 10 | Next sem | Working students have less time and get more tired |
+| 24 | Resilience (average) | 0–1 | 0.5 | Next sem | Students handle stress differently, so they don't all struggle at the same moment. The spread around the average is a fixed value |
+| | **Semester** | | | | |
+| 25 | Assessments per unit | 1–6 | 3 | Next sem | How many stress spikes students face |
+| | **Timetable** | | | | |
+| 26 | ✓ Tutorial length | 30–180 min | 60 | Next sem | Same idea as Lecture length, for tutorials and labs |
+| 27 | ✓ Day ends | 14–22 (hour) | 18 | Next sem | Long days mean fatigue and leaving early |
+| | **Campus** | | | | |
+| 28 | Walking speed spread | 0–30 m/min | 10 | Now | Real people walk at different speeds, so some are always late |
+| 29 | ✓ Crowding strength | 0–1 | 0.3 | Now | Busy paths slow people down (alpha in the BPR traffic formula). Matters more than distance on our compact campus |
+| 30 | Library seats | 50–2000 | 300 | Now | A second errand destination, and where students spend gaps |
+| | **Behaviour** | | | | |
+| 31 | ✓ Leave early by | 0–15 min | 5 | Now | How early students aim to arrive. Decides when they start walking |
+| 32 | ✓ Late after | 0–15 min | 5 | Now | When an arrival counts as late. Needed for the lateness stats |
+| 33 | ✓ Too late to enter | 5–60 min | 20 | Now | When a late student gives up. Turns lateness into skips |
+| 34 | ✓ Base attendance chance | 0.3–1.0 | 0.85 | Now | The overall attendance level before other effects |
+| 35 | Friend influence | 0–1 | 0.3 | Now | Skipping spreads through friend groups (friends = students who share units). A peer effect that's interesting to watch emerge |
+| 36 | Stress per deadline | 0–1 | 0.3 | Now | How hard each deadline hits. Needed for stress to work |
+| 37 | Fatigue per class hour | 0–0.2 | 0.03 | Now | Long days make students tired and more likely to skip later classes |
+| | **Staff** | | | | |
+| 38 | Max teaching hours | 4–20 hrs/week | 12 | Next sem | A real timetabling constraint. Makes scheduling harder and more realistic |
+| 39 | Staff punctuality | 0–15 min | 5 | Now | How early staff leave for class. A late teacher delays the whole class, so lateness spreads from one person to many |
 
-| Parameter | Range | Default | What it changes |
-| --- | --- | --- | --- |
-| ✓ Leave early by (min) | 0–15 | 5 | How early students aim to arrive |
-| ✓ Late after (min) | 0–15 | 5 | When an arrival counts as late |
-| ✓ Too late to enter (min) | 5–60 | 20 | When a late student gives up |
-| ✓ Base attendance chance | 0.3–1.0 | 0.85 | Overall attendance |
-| Friend influence | 0–1 | 0.3 | Skipping spreads through friend groups (friends = students who share units) |
-| Stress per deadline | 0–1 | 0.3 | How hard each deadline hits |
-| Fatigue per class hour | 0–0.2 | 0.03 | Tiredness from long days |
-| Burnout threshold | 0.5–1.0 | 0.85 | Stress level where students start to disengage |
+### Controls, map and test settings (5)
 
-### Staff (lecturers and tutors)
+| # | Parameter | Where | Default | Why we chose it |
+| --- | --- | --- | --- | --- |
+| 40 | ✓ Sim speed | Toolbar | 5 sim min/s | Watch a slow morning or skip through a semester. Playback only, doesn't change results |
+| 41 | ✓ Seed | Toolbar | 42 | Same seed and same settings give the same result, so experiments can be repeated |
+| 42 | Path closures | Click a path on the map | none | Shows the pathfinding live: close a path and students reroute |
+| 43 | Path capacity | Map data (`campus.json`) | from data | Narrow paths become bottlenecks |
+| 44 | Stop after N semesters | Headless runs only | 0 (never) | Test and data-logging runs need an end point. The normal app never stops |
 
-| Parameter | Range | Default | What it changes |
-| --- | --- | --- | --- |
-| Tutors per unit | 1–10 | 3 | Number of tutorial groups, and so tutorial size |
-| Max teaching hours per staff member per week | 4–20 | 12 | Scheduling pressure; staff teaching back-to-back across campus |
-| Staff absence rate | 0–10% | 2% | Cancelled classes and wasted student trips |
-| Staff punctuality (leave early by, min) | 0–15 | 5 | Classes starting late |
-
-### Run
-
-| Parameter | Range | Default | What it changes |
-| --- | --- | --- | --- |
-| ✓ Sim minutes per second | 0.5–240 | 5 | Playback speed only |
-| ✓ Random seed | 0 or more | 42 | Same seed + same parameter changes at the same sim times = same result |
-| Stop after N semesters | 0–50 | 0 (never) | Headless runs and tests only (data logging, experiments). The normal app ignores it |
-
-### When a change takes effect
-
-| Takes effect | Parameters | Why |
-| --- | --- | --- |
-| Straight away | Walking speed and spread, crowding strength, path closures, food outlets, library seats, all Behaviour parameters, staff absence rate, staff punctuality, sim speed | They only change how the next walk or decision plays out |
-| Next semester | Population, Semester and Timetable parameters, room capacity multiplier, tutors per unit, max teaching hours | They need a new timetable or a new intake, which are built at the start of a semester |
-
-The parameter panel should show which parameters are waiting for the next semester.
+The parameter panel should show which changed parameters are waiting for the next semester.
 
 ## Build order
 
-All the parameters above are planned. This is the order to build them in, based on how much each one shows off the core work (pathing, scheduling, walking, continuous time), how visible its effect is, and how much it costs.
+This is the order to build them in, based on how much each one shows off the core work (pathing, scheduling, walking, continuous time), how visible its effect is, and how much it costs.
 
 **Tier 1: first, aim for Week 12**
-- Teaching weeks per semester, semesters per year, break between semesters: the continuous run needs them
-- New intake per year, course length: without them the population never changes
-- Tutors per unit, max teaching hours per staff member: staff clashes and limits make the scheduling realistic
+- Calendar (teaching weeks, semesters per year, break between semesters): the continuous run needs them
+- New intake per year, Course length: without them the population never changes
+- Tutors per unit, Max teaching hours: staff clashes and limits make the scheduling realistic
 - Path closures: shows the pathfinding live (close a path, watch students reroute and get late)
 - Walking speed spread: one number that makes lateness realistic
-- Food outlets, library seats: give students places to go between classes, which is what creates the errands travelling-salesman problem
-- Deadline clustering, stress per deadline, resilience, burnout threshold: the smallest set that makes stress work
-- Lecture recordings available: one number with a big, well-documented effect on attendance
-- Motivation (mean / spread): needed to give students starting values anyway
+- Food outlets, Library seats: places to go between classes, which is what creates the errands travelling-salesman problem
+- Deadline clustering, Stress per deadline, Resilience (average): the smallest set that makes stress work
+- Lecture recordings: one number with a big effect on attendance
 
 **Tier 2: next**
-- Commute mix, average commute: realistic, but need arrival modelling (train bursts, parking)
+- Commuters by public transport, Average commute: realistic, but need arrival modelling (train bursts, parking)
 - Friend influence: a strong emergent effect, but needs a friend network
-- Mid-semester break, exam period, assessments per unit: cheap once the semester calendar exists
-- Staff absence rate, staff punctuality: cancellations and late starts
+- Mid-semester break, Exam period, Assessments per unit: cheap once the semester calendar exists
+- Staff absence rate, Staff punctuality: cancellations and late starts
 
 **Tier 3: if there's time**
 - Part-time work
@@ -146,7 +134,8 @@ All the parameters above are planned. This is the order to build them in, based 
 
 ## Considered and dropped
 
-The team dropped these on 2026-09-25: timetable compactness, max back-to-back classes, protected lunch hour, online / hybrid share, rain chance per day, food service time (a fixed named constant instead), fatigue per km walked.
+- **2026-09-25:** timetable compactness, max back-to-back classes, protected lunch hour, online / hybrid share, rain chance per day, food service time (a fixed named constant instead), fatigue per km walked.
+- **2026-09-29:** Motivation (average) and Burnout threshold. Students still have motivation and can still burn out, but the starting motivation and the stress level where burnout starts are fixed values in the code, not settings.
 
 ## Effects (outputs)
 
@@ -159,7 +148,7 @@ Live values (today, this week) update while the sim runs. Each area below also g
 | Movement | Distance walked per student per day, time spent walking, busiest paths (heatmap), bottlenecks, reroutes caused by closures |
 | Rooms | Room use over time, overfull rooms (students turned away), under-used bookings (under 30% full), peak occupancy |
 | Facilities | Lunch queue wait, library occupancy, errands completed vs given up (the TSP result) |
-| Wellbeing | Average stress across the semester (it should peak with deadline clusters), stress spread, fatigue, number of burnt-out students, motivation trend |
+| Wellbeing | Average stress across the semester (it should peak with deadline clusters), stress spread, fatigue, number of burnt-out students (burnout starts at a fixed stress level), motivation trend |
 | Time use | Hours on campus, dead time between classes, commute time compared with class time |
 | Semester outcomes | Engagement score leading to pass / at-risk / fail bands, dropout risk, withdrawals. These link to the UCI Dropout dataset in Semester 2 |
 | Fairness | Any effect above split by group: commuters vs on-campus students, working vs not working, year level. Shows who a bad timetable hurts most |
