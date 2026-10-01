@@ -101,5 +101,5 @@ Nothing below is built yet. Owners and order are in `ROADMAP.md`.
 - **Schedule as you go:** `SimEngine.setup()` queues every class event at the start. An endless run can't do that, so a `WEEK_START` event queues that week's classes, and a `SEMESTER_START` / `SEMESTER_END` pair builds the timetable and sends the report.
 - **Calendar:** add week and semester numbers to `SimTime`. Time stays as float minutes: GDScript floats are 64-bit, so years of minutes keep full precision.
 - **Food outlets:** the map data has no outlets yet. Add them to `campus.json` with a service time and a queue, and document the format in `DATA_FORMATS.md` in the same change.
-- **When a change takes effect:** timetable parameters (1, 2, 5, 6, 7, 8, 10, 11) need a new timetable, so they apply from the next semester. The rest apply at the next walk or decision. The parameter panel should show which changes are waiting.
+- **Parameters are set once per run** (decision #17). `Params` is read when a run starts and doesn't change while it plays. To try different settings, change them and press Reset to start a new run. Path closures are the one live control: they can be clicked while the sim runs.
 - **Adding a parameter:** a typed var plus a `SPECS` entry in `Params.gd`, the value in `data/scenarios/default.json`, a row in this file with its justification, and a source for the default.
