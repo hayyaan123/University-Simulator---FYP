@@ -34,7 +34,7 @@ Low energy or high stress makes a student more likely to skip a class or leave c
 
 Arrows show the direction of the effect; "–" means no effect.
 
-### Core rows (v1)
+### v1 rows (12)
 
 | Determinant | Grades | Stress | Energy | Satisfaction |
 | --- | --- | --- | --- | --- |
@@ -47,25 +47,19 @@ Arrows show the direction of the effect; "–" means no effect.
 | Walking between classes | – | – | ↓ | – |
 | Food stop in free time | – | – | ↑ | ↑ |
 | Breaks (mid-semester, between semesters) | – | ↓ | ↑ | ↑ |
+| Turned away from a full room | – (hours lost) | ↑ | – | ↓ |
+| Queueing at a food outlet | – | – | – | ↓ |
+| Back-to-back classes with no break | – | ↑ | ↓ | – |
+
+The last three rows were added on 2026-10-01 (decision #18) so that Room capacity, Food outlets and Gap between slots each reach a metric.
 
 "Hours of study in free time" adds a new student activity: in free time a student chooses between studying and getting food. Without it, grades would only be the attendance rate under another name.
 
-### Candidates to add next (not agreed yet)
-
-Each makes a parameter matter that otherwise wouldn't, or builds the "8am effect" more directly.
-
-| Determinant | Grades | Stress | Energy | Satisfaction | Makes this parameter matter |
-| --- | --- | --- | --- | --- | --- |
-| Turned away from a full room | – (hours lost) | ↑ | – | ↓ | Room capacity |
-| Queueing at a food outlet | – | – | – | ↓ | Food outlets, Students |
-| Back-to-back classes with no break | – | ↑ | ↓ | – | Gap between slots, Class length |
-| Short night (late finish, then early start) | – | – | ↓ | – | Teaching day, Average commute |
-| Coming in for a single class | – | – | – | ↓ | Average commute |
-
-### Later candidates
+### Later candidates (not in v1)
 
 | Determinant | Grades | Stress | Energy | Satisfaction |
 | --- | --- | --- | --- | --- |
+| Coming in for a single class | – | – | – | ↓ |
 | Rushing (walk time close to the gap length) | – | ↑ | ↓ | – |
 | Long idle gap with nothing to do | – | – | – | ↓ |
 | Long day on campus (first class to last) | – | – | ↓ | ↓ |
@@ -123,6 +117,9 @@ Planned shape, to be built in Sprint 3 (see `ROADMAP.md`). File locations follow
   	&"walked_minute": {&"energy": -0.2},
   	&"food_stop": {&"energy": 10.0, &"satisfaction": 1.0},
   	&"break_day": {&"stress": -3.0, &"energy": 5.0, &"satisfaction": 1.0},
+	&"turned_away": {&"stress": 1.0, &"satisfaction": -3.0},
+	&"queued_minute": {&"satisfaction": -0.2},
+	&"back_to_back_class": {&"stress": 0.5, &"energy": -1.0},
   }
   ```
 

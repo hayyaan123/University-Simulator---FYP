@@ -86,7 +86,6 @@ If time runs short, cut in this order: path closures, the Trimester preset, year
 ## Open decisions
 
 - [ ] The effect sizes in `docs/STUDENT_MODEL.md` (a number and a justification per row)
-- [ ] Which of the candidate determinants go into v1
 - [ ] Which part of the sim uses AI
 - [ ] Does the app show the campus as "Monash University Malaysia", or a neutral name?
 - [ ] Do we commit Godot's `.gd.uid` files? (Godot 4.4 and later recommends it)
