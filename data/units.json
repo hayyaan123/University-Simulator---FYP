@@ -1,0 +1,29 @@
+{
+	"note": "Placeholder unit list for the first working version. Codes follow the Monash handbook style; names, years and enrolments still need checking against the handbook.",
+	"units": [
+		{ "code": "FIT1045", "name": "Introduction to programming", "year": 1, "enrolment": 400, "lectures_per_week": 1, "tutorials_per_week": 1, "labs_per_week": 0 },
+		{ "code": "FIT1008", "name": "Introduction to computer science", "year": 1, "enrolment": 300, "lectures_per_week": 1, "tutorials_per_week": 1, "labs_per_week": 0 },
+		{ "code": "FIT1047", "name": "Introduction to computer systems, networks and security", "year": 1, "enrolment": 300, "lectures_per_week": 1, "tutorials_per_week": 0, "labs_per_week": 1 },
+		{ "code": "FIT1058", "name": "Foundations of computing", "year": 1, "enrolment": 250, "lectures_per_week": 1, "tutorials_per_week": 1, "labs_per_week": 0 },
+		{ "code": "MAT1830", "name": "Discrete mathematics for computer science", "year": 1, "enrolment": 280, "lectures_per_week": 2, "tutorials_per_week": 1, "labs_per_week": 0 },
+		{ "code": "ENG1005", "name": "Engineering mathematics", "year": 1, "enrolment": 350, "lectures_per_week": 2, "tutorials_per_week": 1, "labs_per_week": 0 },
+		{ "code": "ENG1011", "name": "Engineering methods", "year": 1, "enrolment": 300, "lectures_per_week": 1, "tutorials_per_week": 0, "labs_per_week": 1 },
+		{ "code": "ENG1013", "name": "Engineering smart systems", "year": 1, "enrolment": 280, "lectures_per_week": 1, "tutorials_per_week": 0, "labs_per_week": 1 },
+		{ "code": "FIT2004", "name": "Algorithms and data structures", "year": 2, "enrolment": 220, "lectures_per_week": 1, "tutorials_per_week": 1, "labs_per_week": 0 },
+		{ "code": "FIT2014", "name": "Theory of computation", "year": 2, "enrolment": 180, "lectures_per_week": 1, "tutorials_per_week": 1, "labs_per_week": 0 },
+		{ "code": "FIT2099", "name": "Object oriented design and implementation", "year": 2, "enrolment": 220, "lectures_per_week": 1, "tutorials_per_week": 0, "labs_per_week": 1 },
+		{ "code": "FIT2100", "name": "Operating systems", "year": 2, "enrolment": 180, "lectures_per_week": 1, "tutorials_per_week": 0, "labs_per_week": 1 },
+		{ "code": "FIT2101", "name": "Software engineering process and management", "year": 2, "enrolment": 200, "lectures_per_week": 1, "tutorials_per_week": 1, "labs_per_week": 0 },
+		{ "code": "FIT2102", "name": "Programming paradigms", "year": 2, "enrolment": 170, "lectures_per_week": 1, "tutorials_per_week": 0, "labs_per_week": 1 },
+		{ "code": "ENG2005", "name": "Advanced engineering mathematics", "year": 2, "enrolment": 250, "lectures_per_week": 2, "tutorials_per_week": 1, "labs_per_week": 0 },
+		{ "code": "FIT3077", "name": "Software engineering: architecture and design", "year": 3, "enrolment": 140, "lectures_per_week": 1, "tutorials_per_week": 0, "labs_per_week": 1 },
+		{ "code": "FIT3080", "name": "Artificial intelligence", "year": 3, "enrolment": 150, "lectures_per_week": 1, "tutorials_per_week": 1, "labs_per_week": 0 },
+		{ "code": "FIT3152", "name": "Data analytics", "year": 3, "enrolment": 160, "lectures_per_week": 1, "tutorials_per_week": 0, "labs_per_week": 1 },
+		{ "code": "FIT3155", "name": "Advanced data structures and algorithms", "year": 3, "enrolment": 90, "lectures_per_week": 1, "tutorials_per_week": 1, "labs_per_week": 0 },
+		{ "code": "FIT3161", "name": "Computer science project 1", "year": 3, "enrolment": 110, "lectures_per_week": 1, "tutorials_per_week": 1, "labs_per_week": 0 },
+		{ "code": "FIT3170", "name": "Software engineering practice", "year": 3, "enrolment": 130, "lectures_per_week": 1, "tutorials_per_week": 1, "labs_per_week": 0 },
+		{ "code": "FIT3173", "name": "Software security", "year": 3, "enrolment": 100, "lectures_per_week": 1, "tutorials_per_week": 0, "labs_per_week": 1 },
+		{ "code": "FIT3175", "name": "Usability", "year": 3, "enrolment": 90, "lectures_per_week": 1, "tutorials_per_week": 1, "labs_per_week": 0 },
+		{ "code": "FIT3179", "name": "Data visualisation", "year": 3, "enrolment": 120, "lectures_per_week": 1, "tutorials_per_week": 0, "labs_per_week": 1 }
+	]
+}

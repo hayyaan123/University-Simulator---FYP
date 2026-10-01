@@ -4,32 +4,47 @@ All data files are JSON with tab indentation and live in `data/`. Ids are string
 
 ## campus.json
 
+`data/campus.json` is Monash University Malaysia, generated from OpenStreetMap by `tools/build_campus_from_osm.py` (map data © OpenStreetMap contributors, ODbL). To change the map, change the script or the OSM extract in `data/osm/` and run it again rather than editing the JSON by hand. Rooms are placeholders until we have real room lists.
+
 ```json
 {
-	"entrance": "ENTRANCE",
+	"name": "Monash University Malaysia",
+	"source": "Map data (c) OpenStreetMap contributors, ODbL. ...",
+	"metres_per_pixel": 0.4994,
+	"entrance": "SB5",
+	"entrances": ["SB5", "CARPARK", "RES"],
 	"buildings": [
-		{ "id": "ENTRANCE", "name": "Main Gate", "position": [80, 450] },
-		{ "id": "B1", "name": "Building 1", "position": [320, 300] },
-		{ "id": "B2", "name": "Building 2", "position": [600, 520] }
+		{ "id": "B2", "name": "Building 2", "kind": "teaching", "levels": 7,
+		  "position": [1001.3, 283.5], "outline": [[930.4, 270.1], [1003.2, 270.9], ...] }
+	],
+	"waypoints": [
+		{ "id": "W0", "position": [352.1, 604.8] }
 	],
 	"rooms": [
-		{ "id": "B1-LT1", "building": "B1", "capacity": 250, "type": "lecture_hall" },
-		{ "id": "B2-201", "building": "B2", "capacity": 30, "type": "tutorial_room" },
-		{ "id": "B2-LAB1", "building": "B2", "capacity": 40, "type": "lab" }
+		{ "id": "B2-LT1", "building": "B2", "capacity": 250, "type": "lecture_hall" },
+		{ "id": "B2-T1", "building": "B2", "capacity": 35, "type": "tutorial_room" }
 	],
 	"paths": [
-		{ "from": "ENTRANCE", "to": "B1", "distance_m": 260 },
-		{ "from": "B1", "to": "B2", "distance_m": 340 }
-	]
+		{ "from": "W96", "to": "B2", "distance_m": 49.9 },
+		{ "from": "B9", "to": "B2", "distance_m": 49.6, "indoor": true },
+		{ "from": "W3", "to": "W7", "distance_m": 88.2, "points": [[1100.5, 180.2], [1120.0, 176.4]] }
+	],
+	"scenery": [[[420.0, 40.0], [472.0, 40.0], [472.0, 81.0], [420.0, 81.0]]]
 }
 ```
 
 | Field | Rules |
 | --- | --- |
 | `entrance` | Must be a building id. Students enter and leave campus here. |
-| `buildings[].position` | Map position in pixels (viewport is 1600 × 900). |
+| `entrances` | Every place students can arrive at (BRT station, car park, residence). The first one is `entrance`. Used later for the commute mix. |
+| `buildings[].kind` | `teaching`, `library`, `link`, `sports`, `transport`, `residence` or `parking`. |
+| `buildings[].levels` | Floors, from OpenStreetMap where known. For the 3D version later. |
+| `buildings[].position` | Map position in pixels (viewport is 1600 × 900). This is where the building joins the path network. |
+| `buildings[].outline` | Building footprint in pixels, for drawing. |
+| `waypoints` | Path junctions. They are graph nodes like buildings, but have no rooms. |
 | `rooms[].type` | `lecture_hall`, `tutorial_room` or `lab` |
-| `paths` | Undirected. Distance is the walking distance in metres, not the straight line. Every building must be reachable from the entrance. |
+| `paths` | Undirected links between buildings or waypoints. `distance_m` is the walking distance in metres along the path, not the straight line. `indoor: true` marks a link through connected buildings. `points` are the bends between the two ends, in pixels, for drawing. Every building must be reachable from the entrance. |
+| `scenery` | Outlines of other buildings in the area. Drawn only. |
 
 ## units.json
 
@@ -42,7 +57,7 @@ All data files are JSON with tab indentation and live in `data/`. Ids are string
 }
 ```
 
-The timetable generator reads this file along with `Params` (lecture and tutorial lengths, day start and end, slot gap, `units_per_student`, `student_count`). If `Params.unit_count` is smaller than the file, it uses the first N units.
+The timetable generator reads this file along with `Params` (lecture and tutorial lengths, day start and end, slot gap, `units_per_student`, `student_count`). If `Params.unit_count` is smaller than the file, it uses the first N units. `enrolment` is used as a weight when students pick units, and `year` makes students more likely to pick units from their own year level. The current `data/units.json` is a placeholder list that still needs checking against the Monash handbook.
 
 ## Scenario files (data/scenarios/*.json)
 
