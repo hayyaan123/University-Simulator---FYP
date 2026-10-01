@@ -1,6 +1,8 @@
-# University Simulator 2026
+# Campus Simulator
 
-A campus simulation built in Godot for a Monash final year project (FIT3161 / FIT3163 / FIT3188). It models how students move through a university week. Each student has their own timetable and walks between buildings for their classes. They decide whether to attend, and they can arrive late when back-to-back classes are far apart. You can adjust parameters (class lengths, gaps, walking speed, room sizes, student numbers and more) and watch attendance, lateness, room use and crowding change on the dashboard.
+A campus simulation built in Godot for a Monash final year project (FIT3161 / FIT3163 / FIT3188). It models how students move through a university semester. Each student has their own timetable and walks between buildings for their classes. They decide whether to attend, and they can arrive late when back-to-back classes are far apart. You can adjust 15 parameters (class lengths, gaps, room sizes, student numbers, deadlines and more) and watch four results trade off against each other at the end of every semester: grades, stress, energy and satisfaction.
+
+The first version runs one week end to end: campus map, timetable, walking, lateness and attendance. Student states, errands and the semester calendar are being built now (see the [roadmap](docs/ROADMAP.md)).
 
 In Semester 2, small machine learning models trained on real student data (OULAD, UCI Dropout) take over the student decisions while the simulation runs.
 
@@ -17,23 +19,27 @@ In Semester 2, small machine learning models trained on real student data (OULAD
 ## Project structure
 
 ```
-autoload/    Params (settings), EventBus (signals), Stats (running totals)
-sim/         SimEngine, EventQueue, SimEvent, SimTime, Student, ClassSession, Campus, SimRunner
-decisions/   DecisionModel (base), DecisionContext; RuleDecision / MLDecision later
-scenes/      Main scene; MapView, ParamPanel, Dashboard to come
-data/        campus.json, units.json, scenarios/
-tests/       GUT tests and test helpers
-tools/       Python scripts for data and model training (Semester 2)
-docs/        Architecture, code style, contributing, data formats, roadmap, decisions
+autoload/        Params (settings), EventBus (signals), Stats (running totals)
+sim/core/        SimEngine, EventQueue, SimEvent, SimTime, SimRunner
+sim/campus/      Campus (graph + shortest paths)
+sim/timetable/   TimetableGenerator, ClassSession
+sim/students/    Student
+decisions/       DecisionModel (base), DecisionContext; RuleDecision / MLDecision later
+scenes/          Main scene, MapView; ParamPanel and Dashboard to come
+data/            campus.json, units.json, scenarios/
+tests/           GUT tests and test helpers
+tools/           Python scripts for data and model training (Semester 2)
+docs/            Architecture, student model, parameters, roadmap, decisions and more
 ```
 
 ## Docs
 
-- [Architecture](docs/ARCHITECTURE.md): how the simulation works
+- [Architecture](docs/ARCHITECTURE.md): how the simulation works, and where new files go
+- [Student model](docs/STUDENT_MODEL.md): grades, stress, energy and satisfaction, and what moves them
 - [Code style](docs/CODE_STYLE.md)
 - [Contributing](docs/CONTRIBUTING.md): setup, branches, pull requests
 - [Data formats](docs/DATA_FORMATS.md): campus, units, scenarios, logs, ML models
-- [Parameters and effects](docs/PARAMETERS.md): what you can adjust and what the sim measures (proposal)
+- [Parameters](docs/PARAMETERS.md): the 15 things you can adjust, and why each one is there
 - [Roadmap](docs/ROADMAP.md): scope, owners, sprints
 - [Decision log](docs/DECISIONS.md)
 

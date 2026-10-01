@@ -1,6 +1,6 @@
 # Architecture
 
-University Simulator 2026 is a **discrete-event simulation**. Nothing moves on a fixed tick. Instead, a queue of timed events (a class starts, a student decides, a student arrives) moves the clock forward. The visuals watch the simulation, but they never drive it.
+Campus Simulator is a **discrete-event simulation**. Nothing moves on a fixed tick. Instead, a queue of timed events (a class starts, a student decides, a student arrives) moves the clock forward. The visuals watch the simulation, but they never drive it.
 
 ## Layers
 
@@ -22,19 +22,58 @@ flowchart LR
 | Layer | Files | Depends on | Must not depend on |
 | --- | --- | --- | --- |
 | Config | `autoload/Params.gd` | nothing | anything else |
-| Core simulation | `sim/*.gd`, `decisions/*.gd` | Params, EventBus | Nodes, scenes, UI |
+| Core simulation | `sim/**/*.gd`, `decisions/*.gd` | Params, EventBus | Nodes, scenes, UI |
 | Signals | `autoload/EventBus.gd` | core types | UI |
 | Aggregation | `autoload/Stats.gd`, loggers | EventBus | UI |
-| Real-time driver | `sim/SimRunner.gd` | SimEngine, Params | UI |
+| Real-time driver | `sim/core/SimRunner.gd` | SimEngine, Params | UI |
 | Presentation | `scenes/`, `ui/` | EventBus, Stats, Params, SimRunner | SimEngine internals |
 
 **Why this matters:** the core runs with no window. That lets us run unit tests, run 5,000 students at full speed to log training data, and replace the visuals later without touching the rules.
+
+## Folder layout
+
+Code is grouped by what it models, so each area has one owner (see `ROADMAP.md`) and a new file has an obvious home. Folders marked *planned* don't exist yet; create them with the first file that belongs there.
+
+```
+autoload/          Params (settings), EventBus (signals), Stats (running totals)
+sim/
+  core/            SimEngine, EventQueue, SimEvent, SimTime, SimRunner
+                   planned: Calendar (weeks, semesters, breaks, exams)
+  campus/          Campus (graph + Dijkstra)
+                   planned: FoodOutlet, path closures
+  timetable/       TimetableGenerator, ClassSession
+                   planned: Assessment
+  students/        Student
+                   planned: StateEffects (the determinants table)
+  errands/         planned: ErrandPlanner (knapsack + TSP)
+  staff/           planned, Semester 2: Staff
+  logging/         planned, Semester 2: RunLogger
+decisions/         DecisionModel (base), DecisionContext
+                   planned: RuleDecision, MLDecision (Semester 2)
+ml/                planned, Semester 2: model loaders and JSON model files
+scenes/            Main, MapView; planned: ParamPanel, Dashboard, SemesterReport
+ui/                planned: chart widgets and panels shared between scenes
+data/              campus.json, units.json, scenarios/, osm/
+tests/unit/        one test_<thing>.gd per class
+tests/helpers/     fakes shared between tests
+tools/             Python scripts (not part of the Godot build)
+docs/              these documents
+```
+
+**Where does a new file go?**
+
+- It models part of the simulated world and has no Node or UI: a subfolder of `sim/`, named after the thing it models.
+- It chooses what a student does: `decisions/`.
+- It draws something or handles input: `scenes/` (a scene and its root script) or `ui/` (a widget used by more than one scene).
+- It's a value a user can tune: `autoload/Params.gd`. It's a signal between systems: `autoload/EventBus.gd`.
+
+Scripts are found by `class_name`, not by path, so moving a script only breaks `.tscn` files that point at it. Move scripts with `git mv`, and move the `.gd.uid` file next to it if you have one.
 
 ## Time
 
 - Time is a `float` in **minutes from Monday 00:00** of the simulated week. `SimTime` converts it (`SimTime.at(1, 9, 30)` = Tue 09:30 = `2010.0`).
 - Time is continuous: a student can arrive at 10:07.5.
-- A run covers `Params.days_to_simulate` days and ends at midnight after the last one.
+- Today a run covers `Params.days_to_simulate` days and ends at midnight after the last one. The target is a run with no end, reported semester by semester (decision #7).
 
 ## Event queue
 
@@ -47,6 +86,8 @@ flowchart LR
 | `CLASS_END` | session | Everyone inside becomes WAITING and schedules their next decision |
 | `STUDENT_DECIDE` | student | The decision model picks an action; ATTEND leaves right away |
 | `STUDENT_ARRIVE` | student | The student is on time, late, or too late to enter |
+
+Planned events: `WEEK_START` (queue that week's classes), `SEMESTER_START` / `SEMESTER_END` (build the timetable, send the report), `ASSESSMENT_DUE` (work out the mark), `ERRAND_DONE` (a student finishes a food stop or study block).
 
 ## Student flow
 
@@ -61,6 +102,8 @@ stateDiagram-v2
     WAITING --> OFF_CAMPUS: no classes left / LEAVE_CAMPUS
 ```
 
+Planned: an `ON_ERRAND` activity between `WAITING` and `TRAVELLING`, for food stops and study in free time.
+
 ### The core rules (SimEngine)
 
 1. **When to decide.** For the next class, `decide_at = max(now, class.start − travel − arrival_buffer)`. Students aim to arrive `arrival_buffer_minutes` early.
@@ -72,6 +115,28 @@ stateDiagram-v2
 4. **Decisions** decide *what* (attend, skip, leave campus). The engine decides *when* and *how long*.
 5. **Going home.** When a student has no classes left today, they go to the entrance and become OFF_CAMPUS.
 
+## Student model
+
+Each student has four hidden states: grades, stress, energy and satisfaction. Parameters change what students do and experience (the determinants), and the determinants move the states. The states never feed each other, but low energy or high stress can change a student's choices. The full design, with the determinants table, is in [STUDENT_MODEL.md](STUDENT_MODEL.md). It is not in the code yet: `Student.gd` still has `motivation` and `tiredness`, and nothing updates them.
+
+## Algorithms we write ourselves
+
+Pathing, scheduling and walking distance are coded by us, so we don't use Godot's `AStar2D`, `NavigationServer` or `NavigationAgent`.
+
+| Algorithm | Where it appears in the sim | Status |
+| --- | --- | --- |
+| Shortest path (Dijkstra) | Walking from one class to the next. Run from each building on load and stored as a lookup table. Rerun when a path is closed | Built (`sim/campus/Campus.gd`); closures to build |
+| Scheduling | Building the timetable: no room double-bookings, no student clashes. Greedy with random order, largest units first | Built (`sim/timetable/TimetableGenerator.gd`) |
+| Knapsack | Fitting classes into rooms by capacity | To build, in the timetable generator |
+| Knapsack | Choosing which errands (food, study) fit in a student's free time before the next class | To build (`sim/errands/ErrandPlanner.gd`) |
+| Knapsack | Choosing units that fit a student's workload limit | Good to have |
+| Travelling salesman | Ordering a student's errand stops for the shortest walk that ends at the next class. Held-Karp (exact) for up to about 10 stops | To build (`sim/errands/ErrandPlanner.gd`) |
+| Congestion | Busy paths slow everyone down. A fixed formula, with its strength taken from published pedestrian data | Good to have |
+
+Walking between classes on its own is **not** a travelling salesman problem, because the timetable already fixes the order. The TSP appears when the student chooses the order, which is the errands case.
+
+**3D later:** the campus is stored as a graph (points joined by walking distances). Floors, stairs and lifts become extra points and links, so the algorithms above don't change.
+
 ## Decision models
 
 ```gdscript
@@ -81,7 +146,7 @@ func decide(student: Student, context: DecisionContext, rng: RandomNumberGenerat
 ```
 
 - `DecisionModel` (base) = always attend. It's the baseline for tests and experiments.
-- `RuleDecision` (Sprint 3) = hand-set probabilities based on motivation, tiredness, expected lateness and time of day. Every probability is a named constant or a Params value, with its source noted in a comment.
+- `RuleDecision` (Sprint 3) = the skip chance rises when energy is low or stress is above the student's resilience. It also picks what to do in free time. Every number is a named constant or a Params value, with its source noted in a comment.
 - `MLDecision` (Semester 2) loads a model from JSON (see DATA_FORMATS.md) and runs it in GDScript.
 - Models must use the `rng` they are given for all randomness. Never use `randf()` or `randi()`.
 - `DecisionContext.to_features()` is the feature vector. The same dictionary is emitted on `EventBus.student_decided` for logging, so training data and runtime features always match.
@@ -98,12 +163,27 @@ Adding a signal: add it to EventBus with typed arguments and a `##` comment, emi
 
 `Params` holds every adjustable value as a typed variable, plus a `SPECS` entry (min, max, step, label, group). The parameter panel should be built from `SPECS`, so a new parameter shows up in the UI automatically. Values are read at the start of each run: the user changes values and presses Reset.
 
+The agreed list is the 15 in [PARAMETERS.md](PARAMETERS.md). `Params.gd` still holds the earlier set and needs trimming to match.
+
+## Outputs
+
+| Output | Where | Status |
+| --- | --- | --- |
+| End-of-semester report: average grades, stress, energy and satisfaction; peak stress; burned-out students | Semester report screen | To build |
+| Attendance rate (overall, by unit, by day), skips by reason | `Stats`, dashboard | In `Stats` |
+| Late arrivals, average minutes late, too late to enter | `Stats`, dashboard | In `Stats` |
+| Walking time between back-to-back classes | Dashboard | To build |
+| Room use, students turned away | Dashboard | To build |
+| Food outlet queue length and wait | Dashboard | To build |
+| Students per path at each hour | Dashboard | To build |
+
 ## Performance targets
 
 - 5,000 students × 5 days runs to the end in a few seconds headless.
 - Draw students with one `MultiMeshInstance2D`, not one Node per student.
 - `Campus` pre-computes all building-to-building distances once (Dijkstra from each building) so `travel_minutes` is a lookup.
 - The dashboard refreshes on `sim_time_changed` (once per frame), not per event.
+- Keep one summary per semester, not every event, so long runs don't keep growing.
 
 ## Components
 
@@ -111,13 +191,19 @@ First versions of the campus, timetable and map were built together so the whole
 
 | Component | File | Status | Contract |
 | --- | --- | --- | --- |
-| Campus loader + pathfinding | `sim/Campus.gd` | First version (Hayyaan to take over) | Loads campus.json; Dijkstra from every building on load, so `distance_m()`, `path_between()` and `path_points()` are lookups. Keep the public API |
-| Campus data | `data/campus.json`, `tools/build_campus_from_osm.py` | First version (Shuyu to take over) | Monash University Malaysia from OpenStreetMap; rooms are placeholders |
-| Timetable generator | `sim/TimetableGenerator.gd` | First version (Hayyaan to take over) | `generate(campus, units, rng) -> {"sessions", "students"}` using Params. No room double-booking; no student clashes; classes start on the hour and end `slot_gap_minutes` early; repeat lecture streams for clashing students |
+| Campus loader + pathfinding | `sim/campus/Campus.gd` | First version (Hayyaan to take over) | Loads campus.json; Dijkstra from every building on load, so `distance_m()`, `path_between()` and `path_points()` are lookups. Keep the public API |
+| Campus data | `data/campus.json`, `tools/build_campus_from_osm.py` | First version (Shuyu to take over) | Monash University Malaysia from OpenStreetMap; rooms are placeholders; no food outlets yet |
+| Timetable generator | `sim/timetable/TimetableGenerator.gd` | First version (Hayyaan to take over) | `generate(campus, units, rng) -> {"sessions", "students"}` using Params. No room double-booking; no student clashes; classes start on the hour and end `slot_gap_minutes` early; repeat lecture streams for clashing students |
 | Map view | `scenes/MapView.gd` | First version (Siw to take over) | Listens to EventBus; draws buildings, paths and students (one MultiMesh); walkers follow `Campus.path_points()` |
 | Main scene + temporary HUD | `scenes/Main.gd` | Temporary | Builds a run; the HUD is replaced by ParamPanel and Dashboard |
+| Student states | `sim/students/Student.gd`, `sim/students/StateEffects.gd` | To build | See STUDENT_MODEL.md. `StateEffects` is the only place that changes stress, energy and satisfaction |
 | Rule decisions | `decisions/RuleDecision.gd` | To build | Extends DecisionModel |
-| Parameter panel | `scenes/ParamPanel.tscn` | To build | Built from `Params.SPECS`; see docs/PARAMETERS.md |
-| Dashboard | `scenes/Dashboard.tscn` | To build | Reads `Stats`; attendance, lateness, room use, crowding |
-| CSV logger | `sim/RunLogger.gd` | To build | Listens to `student_decided` / outcomes; writes to `user://logs/` |
+| Calendar | `sim/core/Calendar.gd` | To build | Teaching weeks, mid-semester break, exam period, break between semesters; schedules each week as it starts |
+| Assessments and grades | `sim/timetable/Assessment.gd` | To build | Due week and weight per unit; the mark comes from hours put in |
+| Errands | `sim/errands/ErrandPlanner.gd`, `sim/campus/FoodOutlet.gd` | To build | Knapsack picks the stops that fit the free time; TSP orders them |
+| Parameter panel | `scenes/ParamPanel.tscn` | To build | Built from `Params.SPECS`; see PARAMETERS.md |
+| Dashboard | `scenes/Dashboard.tscn` | To build | Reads `Stats`; see Outputs above |
+| Semester report | `scenes/SemesterReport.tscn` | To build | Shown on `semester_ended`; the four state averages |
+| Staff, recordings, friend groups | `sim/staff/` and others | Semester 2 | The four Good parameters in PARAMETERS.md |
+| CSV logger | `sim/logging/RunLogger.gd` | Semester 2 | Listens to `student_decided` / outcomes; writes to `user://logs/` |
 | ML decisions | `decisions/MLDecision.gd`, `ml/` | Semester 2 | See DATA_FORMATS.md, model JSON |
