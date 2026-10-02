@@ -1,5 +1,5 @@
 extends GutTest
-## RuleDecision: low energy and burnout make skipping more likely.
+## RuleDecision: low energy makes skipping more likely. Stress does not.
 
 const TRIALS: int = 2000
 
@@ -30,37 +30,49 @@ func _count(student: Student, attended_today: int, action: DecisionModel.Action)
 
 func test_rested_student_has_only_the_base_skip_chance() -> void:
 	var student: Student = Student.new(1)
-	assert_eq(model.skip_chance(student), RuleDecision.BASE_SKIP_CHANCE)
+	assert_almost_eq(model.skip_chance(student), RuleDecision.BASE_SKIP_CHANCE, 0.0001)
 
 
-func test_skip_chance_rises_as_energy_falls() -> void:
+func test_skip_chance_rises_faster_as_energy_falls() -> void:
 	var student: Student = Student.new(1)
-	student.energy = RuleDecision.LOW_ENERGY
-	var at_threshold: float = model.skip_chance(student)
-	student.energy = RuleDecision.LOW_ENERGY / 2.0
-	var half_way: float = model.skip_chance(student)
-	student.energy = 0.0
-	var exhausted: float = model.skip_chance(student)
-	assert_eq(at_threshold, RuleDecision.BASE_SKIP_CHANCE)
-	assert_gt(half_way, at_threshold)
-	assert_gt(exhausted, half_way)
-	assert_almost_eq(exhausted,
-		RuleDecision.BASE_SKIP_CHANCE + RuleDecision.MAX_LOW_ENERGY_SKIP_CHANCE, 0.0001)
+	student.energy = 75.0
+	var a_little_tired: float = model.skip_chance(student)
+	student.energy = 50.0
+	var tired: float = model.skip_chance(student)
+	student.energy = 25.0
+	var very_tired: float = model.skip_chance(student)
+	assert_gt(a_little_tired, RuleDecision.BASE_SKIP_CHANCE)
+	assert_gt(tired, a_little_tired)
+	assert_gt(very_tired, tired)
+	# A curve, not a straight line: each 25 points lost adds more than the last.
+	assert_gt(very_tired - tired, tired - a_little_tired)
 
 
-func test_burnout_adds_to_the_skip_chance() -> void:
+func test_student_with_no_energy_always_skips() -> void:
 	var student: Student = Student.new(1)
-	student.stress = student.resilience + 1.0
-	assert_almost_eq(model.skip_chance(student),
-		RuleDecision.BASE_SKIP_CHANCE + RuleDecision.BURNOUT_SKIP_CHANCE, 0.0001)
+	student.energy = StateEffects.STATE_MIN
+	assert_almost_eq(model.skip_chance(student), 1.0, 0.0001)
+	assert_eq(_count(student, 0, DecisionModel.Action.ATTEND_NEXT), 0)
 
 
-func test_skip_chance_never_goes_above_one() -> void:
-	var student: Student = Student.new(1)
-	student.energy = 0.0
-	student.stress = StateEffects.STATE_MAX
-	student.resilience = 0.0
-	assert_lte(model.skip_chance(student), 1.0)
+func test_stress_does_not_change_the_skip_chance() -> void:
+	var calm: Student = Student.new(1)
+	var stressed: Student = Student.new(2)
+	stressed.stress = StateEffects.STATE_MAX
+	assert_eq(model.skip_chance(stressed), model.skip_chance(calm))
+
+
+func test_an_8am_start_costs_about_ten_points_of_attendance() -> void:
+	# Yeo et al. (2023): attendance at 08:00 classes was about 10 percentage points
+	# lower than at later classes. Checked at the default commute.
+	Params.reset_to_defaults()
+	var commute: float = float(Params.average_commute_minutes)
+	var at_nine: Student = Student.new(1)
+	StateEffects.apply(at_nine, StateEffects.COMMUTED_MINUTE, commute)
+	var at_eight: Student = Student.new(2)
+	StateEffects.apply(at_eight, StateEffects.COMMUTED_MINUTE, commute)
+	StateEffects.apply(at_eight, StateEffects.EARLY_START_HOUR, 1.0)
+	assert_almost_eq(model.skip_chance(at_eight) - model.skip_chance(at_nine), 0.10, 0.02)
 
 
 func test_rested_student_nearly_always_attends() -> void:
@@ -70,13 +82,14 @@ func test_rested_student_nearly_always_attends() -> void:
 	assert_lt(attended, TRIALS)
 
 
-func test_exhausted_student_skips_more_than_a_rested_one() -> void:
+func test_tired_student_skips_more_than_a_rested_one() -> void:
 	var rested: Student = Student.new(1)
-	var exhausted: Student = Student.new(2)
-	exhausted.energy = 0.0
+	var tired: Student = Student.new(2)
+	tired.energy = 40.0
 	var rested_attends: int = _count(rested, 0, DecisionModel.Action.ATTEND_NEXT)
-	var exhausted_attends: int = _count(exhausted, 0, DecisionModel.Action.ATTEND_NEXT)
-	assert_lt(exhausted_attends, rested_attends)
+	var tired_attends: int = _count(tired, 0, DecisionModel.Action.ATTEND_NEXT)
+	assert_lt(tired_attends, rested_attends)
+	assert_gt(tired_attends, 0)
 
 
 func test_tired_student_who_has_been_to_class_goes_home() -> void:
@@ -109,4 +122,3 @@ func test_deciding_does_not_change_the_states() -> void:
 	_count(student, 1, DecisionModel.Action.ATTEND_NEXT)
 	assert_eq(student.energy, 20.0)
 	assert_eq(student.stress, 30.0)
-	assert_eq(student.satisfaction, StateEffects.START_SATISFACTION)

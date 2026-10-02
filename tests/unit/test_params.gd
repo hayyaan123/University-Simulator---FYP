@@ -20,8 +20,8 @@ func test_every_spec_has_a_variable() -> void:
 func test_set_value_clamps() -> void:
 	Params.set_value(&"student_count", 999999)
 	assert_eq(Params.student_count, 5000)
-	Params.set_value(&"resilience", -5.0)
-	assert_eq(Params.resilience, 0.0)
+	Params.set_value(&"deadline_clustering", -5.0)
+	assert_eq(Params.deadline_clustering, 0.0)
 
 
 func test_unknown_key_is_rejected() -> void:
@@ -30,8 +30,8 @@ func test_unknown_key_is_rejected() -> void:
 
 func test_changed_signal() -> void:
 	watch_signals(Params)
-	Params.set_value(&"resilience", 80.0)
-	assert_signal_emitted_with_parameters(Params, "changed", [&"resilience", 80.0])
+	Params.set_value(&"deadline_clustering", 0.8)
+	assert_signal_emitted_with_parameters(Params, "changed", [&"deadline_clustering", 0.8])
 
 
 func test_scenario_round_trip() -> void:

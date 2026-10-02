@@ -22,14 +22,15 @@ func _session(id: int, building: StringName, hour: int, minute: int, duration: f
 		SimTime.at(0, hour, minute), duration, 100)
 
 
-func _run(sessions: Array[ClassSession], model: DecisionModel = DecisionModel.new(), commute_minutes: float = 0.0) -> Student:
+func _run(sessions: Array[ClassSession], model: DecisionModel = DecisionModel.new(), commute_minutes: float = 0.0,
+		assessments: Array[Assessment] = []) -> Student:
 	var student: Student = Student.new(1)
 	student.commute_minutes = commute_minutes
 	student.set_timetable(sessions)
 	for session: ClassSession in sessions:
 		session.enrolled_ids.append(student.id)
 	var engine: SimEngine = SimEngine.new()
-	engine.setup(campus, sessions, [student] as Array[Student], model)
+	engine.setup(campus, sessions, [student] as Array[Student], model, assessments)
 	engine.run_to_end()
 	assert_true(engine.is_finished())
 	return student
@@ -152,10 +153,9 @@ func test_attending_records_hours_and_moves_states() -> void:
 	assert_almost_eq(student.energy, expected_energy, 0.0001)
 	assert_almost_eq(student.stress,
 		StateEffects.START_STRESS + _effect(StateEffects.ATTENDED_CLASS_HOUR, &"stress"), 0.0001)
-	assert_eq(student.satisfaction, StateEffects.START_SATISFACTION)
 
 
-func test_late_student_gets_fewer_hours_and_lower_satisfaction() -> void:
+func test_late_student_gets_fewer_hours_and_more_stress() -> void:
 	campus.set_travel(&"B1", &"B2", 12.0)
 	var student: Student = _run([
 		_session(1, &"B1", 9, 0, 60.0),
@@ -163,8 +163,10 @@ func test_late_student_gets_fewer_hours_and_lower_satisfaction() -> void:
 	] as Array[ClassSession])
 	# 60 min in the first class, 48 min in the second (12 min late).
 	assert_almost_eq(student.hours_put_in(&"FIT0001"), 1.8, 0.0001)
-	assert_almost_eq(student.satisfaction,
-		StateEffects.START_SATISFACTION + _effect(StateEffects.ARRIVED_LATE, &"satisfaction"), 0.0001)
+	assert_almost_eq(student.stress, StateEffects.START_STRESS
+		+ 1.8 * _effect(StateEffects.ATTENDED_CLASS_HOUR, &"stress")
+		+ _effect(StateEffects.ARRIVED_LATE, &"stress")
+		+ _effect(StateEffects.BACK_TO_BACK_CLASS, &"stress"), 0.0001)
 
 
 func test_too_late_to_enter_gives_no_hours_and_no_rest() -> void:
@@ -178,7 +180,9 @@ func test_too_late_to_enter_gives_no_hours_and_no_rest() -> void:
 		+ (5.0 + 30.0) * _effect(StateEffects.WALKED_MINUTE, &"energy")
 		+ _effect(StateEffects.ATTENDED_CLASS_HOUR, &"energy"))
 	assert_almost_eq(student.energy, expected_energy, 0.0001)
-	assert_lt(student.satisfaction, StateEffects.START_SATISFACTION)
+	assert_almost_eq(student.stress, StateEffects.START_STRESS
+		+ _effect(StateEffects.ATTENDED_CLASS_HOUR, &"stress")
+		+ _effect(StateEffects.ARRIVED_LATE, &"stress"), 0.0001)
 
 
 func test_skipping_gives_no_hours_and_no_stress() -> void:
@@ -218,14 +222,12 @@ func test_energy_is_restored_overnight_but_stress_carries_over() -> void:
 		StateEffects.START_STRESS + 2.0 * _effect(StateEffects.ATTENDED_CLASS_HOUR, &"stress"), 0.0001)
 
 
-func test_commute_costs_energy_and_satisfaction_before_the_first_class() -> void:
+func test_commute_costs_energy_before_the_first_class() -> void:
 	var sessions: Array[ClassSession] = [_session(1, &"B1", 9, 0, 60.0)]
 	var near: Student = _run(sessions, DecisionModel.new(), 0.0)
 	var far: Student = _run([_session(1, &"B1", 9, 0, 60.0)] as Array[ClassSession], DecisionModel.new(), 60.0)
 	assert_almost_eq(far.energy - near.energy,
 		60.0 * _effect(StateEffects.COMMUTED_MINUTE, &"energy"), 0.0001)
-	assert_almost_eq(far.satisfaction - near.satisfaction,
-		60.0 * _effect(StateEffects.COMMUTED_MINUTE, &"satisfaction"), 0.0001)
 
 
 func test_early_first_class_costs_energy() -> void:
@@ -239,4 +241,106 @@ func test_early_first_class_costs_energy() -> void:
 func test_student_with_no_class_today_pays_no_commute() -> void:
 	var student: Student = _run([] as Array[ClassSession], DecisionModel.new(), 60.0)
 	assert_eq(student.energy, StateEffects.START_ENERGY)
-	assert_eq(student.satisfaction, StateEffects.START_SATISFACTION)
+
+# --- Weeks, assessments and grades ------------------------------------------------
+
+func test_timetable_repeats_every_week() -> void:
+	Params.set_value(&"days_to_simulate", 14)
+	var student: Student = _run([_session(1, &"B1", 9, 0, 60.0)] as Array[ClassSession])
+	assert_eq(student.attended_count, 2)
+	assert_almost_eq(student.hours_put_in(&"FIT0001"), 2.0, 0.0001)
+
+
+func test_run_shorter_than_a_week_does_not_repeat() -> void:
+	Params.set_value(&"days_to_simulate", 5)
+	var student: Student = _run([_session(1, &"B1", 9, 0, 60.0)] as Array[ClassSession])
+	assert_eq(student.attended_count, 1)
+
+
+func test_week_ended_is_emitted_once_per_full_week() -> void:
+	Params.set_value(&"days_to_simulate", 14)
+	var weeks: Array[int] = []
+	var on_week_ended: Callable = func(week: int) -> void: weeks.append(week)
+	EventBus.week_ended.connect(on_week_ended)
+	_run([_session(1, &"B1", 9, 0, 60.0)] as Array[ClassSession])
+	EventBus.week_ended.disconnect(on_week_ended)
+	assert_eq(weeks, [1, 2] as Array[int])
+
+
+func test_assessment_is_marked_from_hours_put_in() -> void:
+	Params.set_value(&"days_to_simulate", 7)
+	var due: Array[Assessment] = [Assessment.new(0, &"FIT0001", 1, 1.0)]
+	var student: Student = _run([_session(1, &"B1", 9, 0, 60.0)] as Array[ClassSession],
+		DecisionModel.new(), 0.0, due)
+	# One hour put in against the hours expected in week 1.
+	var expected: float = Grades.MAX_MARK * 1.0 / FixedSettings.EXPECTED_HOURS_PER_UNIT_WEEK
+	assert_almost_eq(student.unit_grade(&"FIT0001"), expected, 0.0001)
+	assert_almost_eq(student.grade(), expected, 0.0001)
+
+
+func test_skipping_every_class_gives_a_zero_mark() -> void:
+	Params.set_value(&"days_to_simulate", 7)
+	var due: Array[Assessment] = [Assessment.new(0, &"FIT0001", 1, 1.0)]
+	var student: Student = _run([_session(1, &"B1", 9, 0, 60.0)] as Array[ClassSession],
+		FixedDecision.new(DecisionModel.Action.SKIP_NEXT), 0.0, due)
+	assert_eq(student.grade(), Grades.MIN_MARK)
+
+
+func test_no_grade_before_an_assessment_is_due() -> void:
+	Params.set_value(&"days_to_simulate", 7)
+	var due: Array[Assessment] = [Assessment.new(0, &"FIT0001", 2, 1.0)]
+	var student: Student = _run([_session(1, &"B1", 9, 0, 60.0)] as Array[ClassSession],
+		DecisionModel.new(), 0.0, due)
+	assert_eq(student.grade(), Grades.NO_GRADE)
+
+
+func test_assessment_in_another_unit_is_not_marked() -> void:
+	Params.set_value(&"days_to_simulate", 7)
+	var due: Array[Assessment] = [Assessment.new(0, &"FIT9999", 1, 1.0)]
+	var student: Student = _run([_session(1, &"B1", 9, 0, 60.0)] as Array[ClassSession],
+		DecisionModel.new(), 0.0, due)
+	assert_eq(student.grade(), Grades.NO_GRADE)
+
+
+func test_near_deadline_raises_stress_every_day() -> void:
+	Params.set_value(&"days_to_simulate", 7)
+	var due: Array[Assessment] = [Assessment.new(0, &"FIT0001", 1, 1.0)]
+	var student: Student = _run([_session(1, &"B1", 9, 0, 60.0)] as Array[ClassSession],
+		FixedDecision.new(DecisionModel.Action.SKIP_NEXT), 0.0, due)
+	assert_almost_eq(student.stress,
+		StateEffects.START_STRESS + 7.0 * _effect(StateEffects.DEADLINE_NEAR, &"stress"), 0.0001)
+
+
+func test_deadline_more_than_a_week_away_adds_no_stress() -> void:
+	Params.set_value(&"days_to_simulate", 7)
+	var due: Array[Assessment] = [Assessment.new(0, &"FIT0001", 3, 1.0)]
+	var student: Student = _run([_session(1, &"B1", 9, 0, 60.0)] as Array[ClassSession],
+		FixedDecision.new(DecisionModel.Action.SKIP_NEXT), 0.0, due)
+	assert_eq(student.stress, StateEffects.START_STRESS)
+
+
+func test_two_near_deadlines_add_twice_the_stress() -> void:
+	Params.set_value(&"days_to_simulate", 1)
+	var due: Array[Assessment] = [Assessment.new(0, &"FIT0001", 1, 0.5), Assessment.new(1, &"FIT0001", 1, 0.5)]
+	var student: Student = _run([_session(1, &"B1", 9, 0, 60.0)] as Array[ClassSession],
+		FixedDecision.new(DecisionModel.Action.SKIP_NEXT), 0.0, due)
+	assert_almost_eq(student.stress,
+		StateEffects.START_STRESS + 2.0 * _effect(StateEffects.DEADLINE_NEAR, &"stress"), 0.0001)
+
+
+func test_student_in_an_overcrowded_room_still_attends_but_is_stressed() -> void:
+	var session: ClassSession = ClassSession.new(1, &"FIT0001", ClassSession.Kind.LECTURE, &"R1", &"B1",
+		SimTime.at(0, 9, 0), 60.0, 1)
+	var first: Student = Student.new(1)
+	var second: Student = Student.new(2)
+	for student: Student in [first, second]:
+		student.set_timetable([session] as Array[ClassSession])
+		session.enrolled_ids.append(student.id)
+	var engine: SimEngine = SimEngine.new()
+	engine.setup(campus, [session] as Array[ClassSession], [first, second] as Array[Student], DecisionModel.new())
+	engine.run_to_end()
+	assert_eq(first.attended_count, 1)
+	assert_eq(second.attended_count, 1)
+	assert_almost_eq(second.hours_put_in(&"FIT0001"), 1.0, 0.0001)
+	assert_almost_eq(second.stress - first.stress, _effect(StateEffects.OVERCROWDED_ROOM, &"stress"), 0.0001)
+	assert_almost_eq(second.energy - first.energy, _effect(StateEffects.OVERCROWDED_ROOM, &"energy"), 0.0001)

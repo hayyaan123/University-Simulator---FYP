@@ -7,6 +7,8 @@ extends RefCounted
 
 const MINUTES_PER_HOUR: int = 60
 const MINUTES_PER_DAY: int = 1440
+const DAYS_PER_WEEK: int = 7
+const MINUTES_PER_WEEK: int = MINUTES_PER_DAY * DAYS_PER_WEEK
 const DAY_NAMES: PackedStringArray = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
 

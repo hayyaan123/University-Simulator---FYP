@@ -52,8 +52,6 @@ func to_features(student: Student) -> Dictionary:
 		"year": student.year,
 		"stress": student.stress,
 		"energy": student.energy,
-		"satisfaction": student.satisfaction,
-		"resilience": student.resilience,
 		"commute_minutes": student.commute_minutes,
 		"attendance_rate": student.attendance_rate(),
 	}
