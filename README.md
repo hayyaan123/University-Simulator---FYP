@@ -2,7 +2,7 @@
 
 A campus simulation built in Godot for a Monash final year project (FIT3161 / FIT3163 / FIT3188). It models how students move through a university semester. Each student has their own timetable and walks between buildings for their classes. They decide whether to attend, and they can arrive late when back-to-back classes are far apart. You can adjust 15 parameters (class lengths, gaps, room sizes, student numbers, deadlines and more) and watch four results trade off against each other at the end of every semester: grades, stress, energy and satisfaction.
 
-The first version runs one week end to end: campus map, timetable, walking, lateness and attendance. Student states, errands and the semester calendar are being built now (see the [roadmap](docs/ROADMAP.md)).
+The first version runs one week end to end: campus map, timetable, walking, lateness and attendance. Students also have stress, energy and satisfaction, and skip more when tired. Grades, errands and the semester calendar are being built now (see the [roadmap](docs/ROADMAP.md)).
 
 In Semester 2, small machine learning models trained on real student data (OULAD, UCI Dropout) take over the student decisions while the simulation runs.
 
@@ -20,11 +20,11 @@ In Semester 2, small machine learning models trained on real student data (OULAD
 
 ```
 autoload/        Params (settings), EventBus (signals), Stats (running totals)
-sim/core/        SimEngine, EventQueue, SimEvent, SimTime, SimRunner
+sim/core/        SimEngine, EventQueue, SimEvent, SimTime, SimRunner, FixedSettings
 sim/campus/      Campus (graph + shortest paths)
 sim/timetable/   TimetableGenerator, ClassSession
-sim/students/    Student
-decisions/       DecisionModel (base), DecisionContext; RuleDecision / MLDecision later
+sim/students/    Student, StateEffects (what moves stress, energy and satisfaction)
+decisions/       DecisionModel (base), DecisionContext, RuleDecision; MLDecision later
 scenes/          Main scene, MapView; ParamPanel and Dashboard to come
 data/            campus.json, units.json, scenarios/
 tests/           GUT tests and test helpers

@@ -1,0 +1,21 @@
+class_name FixedSettings
+extends RefCounted
+## Values the simulation needs but that are not experiment levers, so they are
+## not sliders in Params (docs/PARAMETERS.md, "Fixed settings").
+##
+## PLACEHOLDER sources: each value needs a source or a stated assumption (Arya).
+
+## Average walking speed, about 1.3 m/s.
+const WALKING_SPEED_M_PER_MIN: float = 80.0
+## Students aim to arrive this many minutes before a class starts.
+const LEAVE_EARLY_MINUTES: float = 5.0
+## An arrival counts as late after this many minutes.
+const LATE_AFTER_MINUTES: float = 5.0
+## A student this late cannot enter, and the class counts as missed.
+const TOO_LATE_MINUTES: float = 20.0
+## A first class before this hour counts as an early start.
+const EARLY_START_REFERENCE_HOUR: float = 9.0
+## Each student's commute is the average times a value from 1 - spread to 1 + spread.
+const COMMUTE_SPREAD: float = 0.5
+## Standard deviation of resilience between students, around the Resilience parameter.
+const RESILIENCE_SPREAD: float = 10.0

@@ -63,8 +63,9 @@ func test_path_points_include_bends_in_the_right_direction() -> void:
 
 func test_travel_minutes_uses_walking_speed() -> void:
 	var campus: Campus = _load_small()
-	Params.set_value(&"walking_speed_m_per_min", 80.0)
-	assert_almost_eq(campus.travel_minutes(&"A", &"B"), 2.5, 0.001)
+	var expected: float = campus.distance_m(&"A", &"B") / FixedSettings.WALKING_SPEED_M_PER_MIN
+	assert_gt(expected, 0.0)
+	assert_almost_eq(campus.travel_minutes(&"A", &"B"), expected, 0.001)
 
 
 func test_rooms() -> void:

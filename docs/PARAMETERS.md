@@ -25,8 +25,8 @@ flowchart LR
 | | **Students** | | | | |
 | 1 | ✓ Students | 50–5000 | 500 | `student_count` | Enrolment numbers. Drives crowding in rooms and queues |
 | 2 | ✓ Units per student | 1–6 | 4 | `units_per_student` | Subjects decide where students go. More units means more class hours and deadlines |
-| 3 | Average commute | 5–120 min | 45 | | Long commutes mean waking earlier and arriving tired. Half of the "8am effect" |
-| 4 | Resilience | 0–100 | 70 | | How much stress a student can take before burning out. Each student gets their own value around this average, so they don't all burn out at once |
+| 3 | ✓ Average commute | 5–120 min | 45 | `average_commute_minutes` | Long commutes mean waking earlier and arriving tired. Half of the "8am effect" |
+| 4 | ✓ Resilience | 0–100 | 70 | `resilience` | How much stress a student can take before burning out. Each student gets their own value around this average, so they don't all burn out at once |
 | | **Timetable** | | | | |
 | 5 | ✓ Teaching day (start and end) | 6–12 / 14–22 (hour) | 8 / 18 | `day_start_hour`, `day_end_hour` | Early starts and long days drain energy. The other half of the "8am effect" |
 | 6 | ✓ Class length (lecture and tutorial) | 30–180 min | 120 / 60 | `lecture_minutes`, `tutorial_minutes` | Longer sessions drain more energy |
@@ -65,16 +65,19 @@ These don't describe the simulated world.
 
 The sim needs these, but they aren't experiment levers. Each becomes a named constant with its source in a comment.
 
-| Setting | Value | In `Params.gd` today as |
+| Setting | Value | In code as |
 | --- | --- | --- |
-| Walking speed | 80 m/min average, with a small spread per student so not everyone arrives at the same moment | `walking_speed_m_per_min` |
-| Leave early by | 5 min | `arrival_buffer_minutes` |
-| Late after | 5 min | `late_grace_minutes` |
-| Too late to enter | 20 min | `skip_threshold_minutes` |
-| Units offered | From `data/units.json` | `unit_count` |
+| Walking speed | 80 m/min. A small spread per student is still to add | `FixedSettings.WALKING_SPEED_M_PER_MIN` |
+| Leave early by | 5 min | `FixedSettings.LEAVE_EARLY_MINUTES` |
+| Late after | 5 min | `FixedSettings.LATE_AFTER_MINUTES` |
+| Too late to enter | 20 min | `FixedSettings.TOO_LATE_MINUTES` |
+| Early start | A first class before 09:00 counts as early | `FixedSettings.EARLY_START_REFERENCE_HOUR` |
+| Commute spread | Each student's commute is 50% to 150% of the average | `FixedSettings.COMMUTE_SPREAD` |
+| Resilience spread | Standard deviation of 10 around the average | `FixedSettings.RESILIENCE_SPREAD` |
+| Units offered | Every unit in `data/units.json` | |
 | Course length | 3 years | |
 | New intake per year | Starting students ÷ course length, so the population stays level | |
-| Crowding strength | From published pedestrian data. Used from Semester 2 | `crowding_strength` |
+| Crowding strength | From published pedestrian data. Used from Semester 2 | |
 | Path capacity | From the map data | |
 | Effect sizes | One number per row of the determinants table, in [STUDENT_MODEL.md](STUDENT_MODEL.md) | |
 
@@ -84,7 +87,7 @@ These were in the list of 44. Most were scope creep or overlapped with something
 
 | Dropped | Why |
 | --- | --- |
-| Base attendance chance (`base_attendance_chance` in code) | Attendance now comes from energy and stress, not a set probability |
+| Base attendance chance | Attendance now comes from energy and stress (`RuleDecision`), not a set probability. Removed from `Params.gd` |
 | Units, Commuters by public transport, Leave early by, Stress per deadline, Fatigue per class hour, Walking speed, Walking speed spread, Crowding strength, New intake per year, Course length | Folded into the parameters above or turned into fixed settings |
 | Library seats, Part-time work | Each needs its own system and no kept parameter depends on it |
 | Max teaching hours | Staff are Good to have, and Staff reliability covers the student-facing effect |
@@ -93,10 +96,10 @@ These were in the list of 44. Most were scope creep or overlapped with something
 
 ## What this needs in the code
 
-Nothing below is built yet. Owners and order are in `ROADMAP.md`.
+Owners and order are in `ROADMAP.md`.
 
-- **Trim `Params.SPECS` to this list.** Add the five missing Must parameters (average commute, resilience, food outlets, assessments per unit, deadline clustering). Move the fixed settings out of `SPECS` into named constants. Remove `base_attendance_chance` when `RuleDecision` lands. Update `data/scenarios/default.json` and `tests/unit/test_params.gd` in the same change.
-- **Student states and determinants:** see "What this needs in the code" in [STUDENT_MODEL.md](STUDENT_MODEL.md).
+- **`Params.SPECS` now holds the agreed parameters that have an effect**, plus the run controls. The fixed settings moved to `sim/core/FixedSettings.gd`. Three Must parameters are not in `Params` yet, because a slider that does nothing would mislead: Food outlets (waits for the errand planner), Assessments per unit and Deadline clustering (wait for assessments). Add each one with the system that reads it.
+- **Student states and determinants:** the states, effects table and skip rule are built. See "In the code" in [STUDENT_MODEL.md](STUDENT_MODEL.md) for what is left.
 - **No end time:** `SimEngine` has an `end_time` and stops after `days_to_simulate` days. The app version runs with no end; only headless runs use "Stop after N semesters".
 - **Schedule as you go:** `SimEngine.setup()` queues every class event at the start. An endless run can't do that, so a `WEEK_START` event queues that week's classes, and a `SEMESTER_START` / `SEMESTER_END` pair builds the timetable and sends the report.
 - **Calendar:** add week and semester numbers to `SimTime`. Time stays as float minutes: GDScript floats are 64-bit, so years of minutes keep full precision.

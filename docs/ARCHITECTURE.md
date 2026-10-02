@@ -37,19 +37,18 @@ Code is grouped by what it models, so each area has one owner (see `ROADMAP.md`)
 ```
 autoload/          Params (settings), EventBus (signals), Stats (running totals)
 sim/
-  core/            SimEngine, EventQueue, SimEvent, SimTime, SimRunner
+  core/            SimEngine, EventQueue, SimEvent, SimTime, SimRunner, FixedSettings
                    planned: Calendar (weeks, semesters, breaks, exams)
   campus/          Campus (graph + Dijkstra)
                    planned: FoodOutlet, path closures
   timetable/       TimetableGenerator, ClassSession
                    planned: Assessment
-  students/        Student
-                   planned: StateEffects (the determinants table)
+  students/        Student, StateEffects (the determinants table)
   errands/         planned: ErrandPlanner (knapsack + TSP)
   staff/           planned, Semester 2: Staff
   logging/         planned, Semester 2: RunLogger
-decisions/         DecisionModel (base), DecisionContext
-                   planned: RuleDecision, MLDecision (Semester 2)
+decisions/         DecisionModel (base), DecisionContext, RuleDecision
+                   planned: MLDecision (Semester 2)
 ml/                planned, Semester 2: model loaders and JSON model files
 scenes/            Main, MapView; planned: ParamPanel, Dashboard, SemesterReport
 ui/                planned: chart widgets and panels shared between scenes
@@ -106,18 +105,20 @@ Planned: an `ON_ERRAND` activity between `WAITING` and `TRAVELLING`, for food st
 
 ### The core rules (SimEngine)
 
-1. **When to decide.** For the next class, `decide_at = max(now, class.start − travel − arrival_buffer)`. Students aim to arrive `arrival_buffer_minutes` early.
+1. **When to decide.** For the next class, `decide_at = max(now, class.start − travel − LEAVE_EARLY_MINUTES)`. Students aim to arrive a few minutes early. This and the two lateness limits below are in `FixedSettings`.
 2. **Travel.** `travel = campus.travel_minutes(from, to)` = shortest-path distance ÷ walking speed (× crowding later). If `decide_at` is already past, the student leaves now. **This is how back-to-back classes in far-apart buildings cause lateness.**
 3. **On arrival.** `minutes_late = max(0, arrive − start)`.
-   - `minutes_late > skip_threshold_minutes`, or the class has already ended → too late: counts as a skip (`too_late`).
-   - `minutes_late > late_grace_minutes` → attended but late.
+   - `minutes_late > TOO_LATE_MINUTES`, or the class has already ended → too late: counts as a skip (`too_late`).
+   - `minutes_late > LATE_AFTER_MINUTES` → attended but late.
    - otherwise → attended on time.
 4. **Decisions** decide *what* (attend, skip, leave campus). The engine decides *when* and *how long*.
 5. **Going home.** When a student has no classes left today, they go to the entrance and become OFF_CAMPUS.
 
 ## Student model
 
-Each student has four hidden states: grades, stress, energy and satisfaction. Parameters change what students do and experience (the determinants), and the determinants move the states. The states never feed each other, but low energy or high stress can change a student's choices. The full design, with the determinants table, is in [STUDENT_MODEL.md](STUDENT_MODEL.md). It is not in the code yet: `Student.gd` still has `motivation` and `tiredness`, and nothing updates them.
+Each student has four hidden states: grades, stress, energy and satisfaction. Parameters change what students do and experience (the determinants), and the determinants move the states. The states never feed each other, but low energy or high stress can change a student's choices. The full design, with the determinants table, is in [STUDENT_MODEL.md](STUDENT_MODEL.md).
+
+In the code, `StateEffects` holds the determinants table and is the only place that changes stress, energy and satisfaction. The engine calls `StateEffects.apply()` when a student sits through a class, walks, arrives late, skips, or has two classes back to back. Each morning energy is restored, then the commute and an early first class take some of it away. Rows for systems that aren't built yet (deadlines, food stops, queues, breaks, full rooms) are in the table but nothing triggers them. Grades wait for assessments; the hours they will be measured from are already recorded per unit.
 
 ## Algorithms we write ourselves
 
@@ -146,7 +147,7 @@ func decide(student: Student, context: DecisionContext, rng: RandomNumberGenerat
 ```
 
 - `DecisionModel` (base) = always attend. It's the baseline for tests and experiments.
-- `RuleDecision` (Sprint 3) = the skip chance rises when energy is low or stress is above the student's resilience. It also picks what to do in free time. Every number is a named constant or a Params value, with its source noted in a comment.
+- `RuleDecision` = the skip chance rises as energy falls below a threshold, and again when stress is above the student's resilience. A tired student who has already been to class today leaves campus instead of skipping one class. The app uses this model. Choosing what to do in free time (study, food) comes with the errand planner.
 - `MLDecision` (Semester 2) loads a model from JSON (see DATA_FORMATS.md) and runs it in GDScript.
 - Models must use the `rng` they are given for all randomness. Never use `randf()` or `randi()`.
 - `DecisionContext.to_features()` is the feature vector. The same dictionary is emitted on `EventBus.student_decided` for logging, so training data and runtime features always match.
@@ -161,9 +162,9 @@ Adding a signal: add it to EventBus with typed arguments and a `##` comment, emi
 
 ## Parameters
 
-`Params` holds every adjustable value as a typed variable, plus a `SPECS` entry (min, max, step, label, group). The parameter panel should be built from `SPECS`, so a new parameter shows up in the UI automatically. Values are read at the start of each run: the user changes values and presses Reset.
+`Params` holds every parameter a user can adjust as a typed variable, plus a `SPECS` entry (min, max, step, label, group). The parameter panel should be built from `SPECS`, so a new parameter shows up in the UI automatically. Values are read at the start of each run: the user changes values and presses Reset.
 
-The agreed list is the 15 in [PARAMETERS.md](PARAMETERS.md). `Params.gd` still holds the earlier set and needs trimming to match.
+The agreed list is the 15 in [PARAMETERS.md](PARAMETERS.md). `Params.gd` holds the ones that already have an effect; the rest are added with the system that reads them. Values that are not experiment levers (walking speed, the lateness limits) are named constants in `sim/core/FixedSettings.gd`.
 
 ## Outputs
 
@@ -196,8 +197,8 @@ First versions of the campus, timetable and map were built together so the whole
 | Timetable generator | `sim/timetable/TimetableGenerator.gd` | First version (Hayyaan to take over) | `generate(campus, units, rng) -> {"sessions", "students"}` using Params. No room double-booking; no student clashes; classes start on the hour and end `slot_gap_minutes` early; repeat lecture streams for clashing students |
 | Map view | `scenes/MapView.gd` | First version (Siw to take over) | Listens to EventBus; draws buildings, paths and students (one MultiMesh); walkers follow `Campus.path_points()` |
 | Main scene + temporary HUD | `scenes/Main.gd` | Temporary | Builds a run; the HUD is replaced by ParamPanel and Dashboard |
-| Student states | `sim/students/Student.gd`, `sim/students/StateEffects.gd` | To build | See STUDENT_MODEL.md. `StateEffects` is the only place that changes stress, energy and satisfaction |
-| Rule decisions | `decisions/RuleDecision.gd` | To build | Extends DecisionModel |
+| Student states | `sim/students/Student.gd`, `sim/students/StateEffects.gd` | Built; numbers are placeholders | See STUDENT_MODEL.md. `StateEffects` is the only place that changes stress, energy and satisfaction |
+| Rule decisions | `decisions/RuleDecision.gd` | Built; numbers are placeholders | Extends DecisionModel. `skip_chance(student)` from energy and burnout |
 | Calendar | `sim/core/Calendar.gd` | To build | Teaching weeks, mid-semester break, exam period, break between semesters; schedules each week as it starts |
 | Assessments and grades | `sim/timetable/Assessment.gd` | To build | Due week and weight per unit; the mark comes from hours put in |
 | Errands | `sim/errands/ErrandPlanner.gd`, `sim/campus/FoodOutlet.gd` | To build | Knapsack picks the stops that fit the free time; TSP orders them |

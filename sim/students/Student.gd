@@ -3,7 +3,8 @@ extends RefCounted
 ## One simulated student.
 ##
 ## Holds the student's timetable, where they are, what they are doing, and the
-## attributes that decision models read (motivation, tiredness, history).
+## states that the determinants move (stress, energy, satisfaction) and that
+## decision models read. See docs/STUDENT_MODEL.md.
 
 enum State {
 	OFF_CAMPUS,  ## Not on campus.
@@ -22,10 +23,25 @@ var location: StringName = &""
 ## Session the student is walking to or sitting in (null if none).
 var target_session: ClassSession = null
 
-## 0..1. Lower motivation makes skipping more likely (used by decision models).
-var motivation: float = 1.0
-## 0..1. Rises with walking and long days.
-var tiredness: float = 0.0
+## 0..100. Academic pressure. Changed only by StateEffects.
+var stress: float = StateEffects.START_STRESS
+## 0..100. Drains with class hours and walking; back to full each morning.
+var energy: float = StateEffects.START_ENERGY
+## 0..100. Falls with campus frustrations such as arriving late.
+var satisfaction: float = StateEffects.START_SATISFACTION
+## Stress above this means the student has burned out.
+var resilience: float = StateEffects.DEFAULT_RESILIENCE
+## Minutes this student travels to reach campus.
+var commute_minutes: float = 0.0
+
+## Hours of class attended so far, per unit. Grades are measured from these.
+var hours_attended: Dictionary = {}  # StringName unit code -> float
+## Hours of study in free time so far, per unit.
+var hours_studied: Dictionary = {}   # StringName unit code -> float
+## When the student sat down in the class they are in now.
+var joined_class_at: float = 0.0
+## When the last class they attended today ended (-INF if none yet).
+var last_class_end: float = -INF
 
 var attended_count: int = 0
 var late_count: int = 0
@@ -66,6 +82,20 @@ func sessions_on_day(day: int) -> Array[ClassSession]:
 		if session.day() == day:
 			result.append(session)
 	return result
+
+
+## Adds time sat in a class to the unit's total.
+func add_hours_attended(unit_code: StringName, hours: float) -> void:
+	hours_attended[unit_code] = float(hours_attended.get(unit_code, 0.0)) + hours
+
+
+## Class hours plus study hours for a unit. Assessment marks come from this.
+func hours_put_in(unit_code: StringName) -> float:
+	return float(hours_attended.get(unit_code, 0.0)) + float(hours_studied.get(unit_code, 0.0))
+
+
+func is_burned_out() -> bool:
+	return stress > resilience
 
 
 func attendance_rate() -> float:
