@@ -41,9 +41,8 @@ sim/
                    planned: Calendar (weeks, semesters, breaks, exams)
   campus/          Campus (graph + Dijkstra)
                    planned: FoodOutlet, path closures
-  timetable/       TimetableGenerator, ClassSession
-                   planned: Assessment
-  students/        Student, StateEffects (the determinants table)
+  timetable/       TimetableGenerator, ClassSession, Assessment, AssessmentPlanner
+  students/        Student, StateEffects (the determinants table), Grades
   errands/         planned: ErrandPlanner (knapsack + TSP)
   staff/           planned, Semester 2: Staff
   logging/         planned, Semester 2: RunLogger
@@ -72,7 +71,7 @@ Scripts are found by `class_name`, not by path, so moving a script only breaks `
 
 - Time is a `float` in **minutes from Monday 00:00** of the simulated week. `SimTime` converts it (`SimTime.at(1, 9, 30)` = Tue 09:30 = `2010.0`).
 - Time is continuous: a student can arrive at 10:07.5.
-- Today a run covers `Params.days_to_simulate` days and ends at midnight after the last one. The target is a run with no end, reported semester by semester (decision #7).
+- Today a run covers `Params.days_to_simulate` days (up to 84, one 12-week semester) and ends at midnight after the last one. The timetable is one week long and repeats: at the end of each week every session moves forward a week. The target is a run with no end, reported semester by semester (decision #7).
 
 ## Event queue
 
@@ -80,13 +79,14 @@ Scripts are found by `class_name`, not by path, so moving a script only breaks `
 
 | Event | Subject | What happens |
 | --- | --- | --- |
-| `DAY_START` | day | Each student schedules a decision for their first class that day |
+| `WEEK_END` | week | Assessments due that week are marked; the timetable moves on a week |
+| `DAY_START` | day | Near deadlines raise stress; each student schedules a decision for their first class that day |
 | `CLASS_START` | session | Signal only (UI, stats) |
 | `CLASS_END` | session | Everyone inside becomes WAITING and schedules their next decision |
 | `STUDENT_DECIDE` | student | The decision model picks an action; ATTEND leaves right away |
-| `STUDENT_ARRIVE` | student | The student is on time, late, or too late to enter |
+| `STUDENT_ARRIVE` | student | The student is on time, late, or too late to enter. A room over capacity raises their stress |
 
-Planned events: `WEEK_START` (queue that week's classes), `SEMESTER_START` / `SEMESTER_END` (build the timetable, send the report), `ASSESSMENT_DUE` (work out the mark), `ERRAND_DONE` (a student finishes a food stop or study block).
+Planned events: `SEMESTER_START` / `SEMESTER_END` (build the timetable, send the report) and `ERRAND_DONE` (a student finishes a food stop or study block).
 
 ## Student flow
 
@@ -116,9 +116,11 @@ Planned: an `ON_ERRAND` activity between `WAITING` and `TRAVELLING`, for food st
 
 ## Student model
 
-Each student has four hidden states: grades, stress, energy and satisfaction. Parameters change what students do and experience (the determinants), and the determinants move the states. The states never feed each other, but low energy or high stress can change a student's choices. The full design, with the determinants table, is in [STUDENT_MODEL.md](STUDENT_MODEL.md).
+Each student has three states: grades, stress and energy. Parameters change what students do and experience (the determinants), and the determinants move the states. The states never feed each other, but low energy can change a student's choices. Satisfaction and stress-triggered skipping are Good to have since 2026-10-02 (decisions #19 and #20) and are not in the code. The full design, with the determinants table, is in [STUDENT_MODEL.md](STUDENT_MODEL.md).
 
-In the code, `StateEffects` holds the determinants table and is the only place that changes stress, energy and satisfaction. The engine calls `StateEffects.apply()` when a student sits through a class, walks, arrives late, skips, or has two classes back to back. Each morning energy is restored, then the commute and an early first class take some of it away. Rows for systems that aren't built yet (deadlines, food stops, queues, breaks, full rooms) are in the table but nothing triggers them. Grades wait for assessments; the hours they will be measured from are already recorded per unit.
+In the code, `StateEffects` holds the determinants table and is the only place that changes stress and energy. The engine calls `StateEffects.apply()` when a student sits through a class, walks, arrives late, skips, has two classes back to back, sits in a room over capacity, or has a deadline within 7 days. Each morning energy is restored, then the commute and an early first class take some of it away. Rows for systems that aren't built yet (study, food stops, breaks) are in the table but nothing triggers them.
+
+`AssessmentPlanner` gives each unit its assessments from two parameters. At the end of each week the engine marks the assessments due that week: `Grades.mark()` compares the hours a student has put into the unit with the hours expected by then. `Student.grade()` is the grades state.
 
 ## Algorithms we write ourselves
 
@@ -147,7 +149,7 @@ func decide(student: Student, context: DecisionContext, rng: RandomNumberGenerat
 ```
 
 - `DecisionModel` (base) = always attend. It's the baseline for tests and experiments.
-- `RuleDecision` = the skip chance rises as energy falls below a threshold, and again when stress is above the student's resilience. A tired student who has already been to class today leaves campus instead of skipping one class. The app uses this model. Choosing what to do in free time (study, food) comes with the errand planner.
+- `RuleDecision` = the skip chance rises with the square of the energy a student has lost and reaches 1 at zero energy. Stress does not change it. A tired student who has already been to class today leaves campus instead of skipping one class. The app uses this model. Choosing what to do in free time (study, food) comes with the errand planner.
 - `MLDecision` (Semester 2) loads a model from JSON (see DATA_FORMATS.md) and runs it in GDScript.
 - Models must use the `rng` they are given for all randomness. Never use `randf()` or `randi()`.
 - `DecisionContext.to_features()` is the feature vector. The same dictionary is emitted on `EventBus.student_decided` for logging, so training data and runtime features always match.
@@ -156,7 +158,7 @@ func decide(student: Student, context: DecisionContext, rng: RandomNumberGenerat
 
 The engine emits these signals and never calls UI code. See `autoload/EventBus.gd` for signatures.
 
-`run_started`, `run_finished`, `sim_time_changed`, `day_started`, `class_started`, `class_ended`, `student_state_changed`, `student_departed`, `student_arrived`, `student_attended`, `student_skipped`, `student_decided`.
+`run_started`, `run_finished`, `sim_time_changed`, `day_started`, `week_ended`, `class_started`, `class_ended`, `student_state_changed`, `student_departed`, `student_arrived`, `student_attended`, `student_skipped`, `student_decided`.
 
 Adding a signal: add it to EventBus with typed arguments and a `##` comment, emit it from the engine, and list it here.
 
@@ -170,7 +172,7 @@ The agreed list is the 15 in [PARAMETERS.md](PARAMETERS.md). `Params.gd` holds t
 
 | Output | Where | Status |
 | --- | --- | --- |
-| End-of-semester report: average grades, stress, energy and satisfaction; peak stress; burned-out students | Semester report screen | To build |
+| End-of-semester report: average grades, stress and energy; peak stress | Semester report screen | To build |
 | Attendance rate (overall, by unit, by day), skips by reason | `Stats`, dashboard | In `Stats` |
 | Late arrivals, average minutes late, too late to enter | `Stats`, dashboard | In `Stats` |
 | Walking time between back-to-back classes | Dashboard | To build |
@@ -197,14 +199,14 @@ First versions of the campus, timetable and map were built together so the whole
 | Timetable generator | `sim/timetable/TimetableGenerator.gd` | First version (Hayyaan to take over) | `generate(campus, units, rng) -> {"sessions", "students"}` using Params. No room double-booking; no student clashes; classes start on the hour and end `slot_gap_minutes` early; repeat lecture streams for clashing students |
 | Map view | `scenes/MapView.gd` | First version (Siw to take over) | Listens to EventBus; draws buildings, paths and students (one MultiMesh); walkers follow `Campus.path_points()` |
 | Main scene + temporary HUD | `scenes/Main.gd` | Temporary | Builds a run; the HUD is replaced by ParamPanel and Dashboard |
-| Student states | `sim/students/Student.gd`, `sim/students/StateEffects.gd` | Built; numbers are placeholders | See STUDENT_MODEL.md. `StateEffects` is the only place that changes stress, energy and satisfaction |
-| Rule decisions | `decisions/RuleDecision.gd` | Built; numbers are placeholders | Extends DecisionModel. `skip_chance(student)` from energy and burnout |
-| Calendar | `sim/core/Calendar.gd` | To build | Teaching weeks, mid-semester break, exam period, break between semesters; schedules each week as it starts |
-| Assessments and grades | `sim/timetable/Assessment.gd` | To build | Due week and weight per unit; the mark comes from hours put in |
+| Student states | `sim/students/Student.gd`, `sim/students/StateEffects.gd` | Built | See STUDENT_MODEL.md. `StateEffects` is the only place that changes stress and energy; every size has a source or a stated assumption |
+| Rule decisions | `decisions/RuleDecision.gd` | Built | Extends DecisionModel. `skip_chance(student)` from energy |
+| Calendar | `sim/core/Calendar.gd` | To build | Mid-semester break, exam period, break between semesters, semester after semester. The engine already repeats the weekly timetable for one semester |
+| Assessments and grades | `sim/timetable/Assessment.gd`, `sim/timetable/AssessmentPlanner.gd`, `sim/students/Grades.gd` | Built | `AssessmentPlanner.plan(unit_codes)` gives a due week and weight per assessment; the mark comes from hours put in against hours expected |
 | Errands | `sim/errands/ErrandPlanner.gd`, `sim/campus/FoodOutlet.gd` | To build | Knapsack picks the stops that fit the free time; TSP orders them |
 | Parameter panel | `scenes/ParamPanel.tscn` | To build | Built from `Params.SPECS`; see PARAMETERS.md |
 | Dashboard | `scenes/Dashboard.tscn` | To build | Reads `Stats`; see Outputs above |
-| Semester report | `scenes/SemesterReport.tscn` | To build | Shown on `semester_ended`; the four state averages |
+| Semester report | `scenes/SemesterReport.tscn` | To build | Shown on `semester_ended`; the three state averages |
 | Staff, recordings, friend groups | `sim/staff/` and others | Semester 2 | The four Good parameters in PARAMETERS.md |
 | CSV logger | `sim/logging/RunLogger.gd` | Semester 2 | Listens to `student_decided` / outcomes; writes to `user://logs/` |
 | ML decisions | `decisions/MLDecision.gd`, `ml/` | Semester 2 | See DATA_FORMATS.md, model JSON |

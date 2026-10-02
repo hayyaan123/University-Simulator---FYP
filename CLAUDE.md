@@ -4,9 +4,9 @@ Context for Claude Code when working in this repo. Read this first, then the doc
 
 ## Project
 
-Campus Simulator (repo name: University-Simulator---FYP) is a Monash final year project (FIT3161/FIT3163/FIT3188). It is a **discrete-event campus simulation** in **Godot 4.7 + GDScript**. Students follow timetables, walk between buildings (so travel time can make them late), and decide whether to attend. 15 adjustable parameters change what students do, which moves four student states (grades, stress, energy, satisfaction). Their averages are reported at the end of every semester. There is no end-game: it's a what-if tool.
+Campus Simulator (repo name: University-Simulator---FYP) is a Monash final year project (FIT3161/FIT3163/FIT3188). It is a **discrete-event campus simulation** in **Godot 4.7 + GDScript**. Students follow timetables, walk between buildings (so travel time can make them late), and decide whether to attend. 15 adjustable parameters change what students do, which moves three student states (grades, stress, energy). Their averages are reported at the end of every semester. There is no end-game: it's a what-if tool.
 
-- **Semester 1 (now):** rule-based prototype due at Week 12. Built so far: campus map, timetable generator, walking, lateness, attendance, student states (stress, energy, satisfaction), rule-based skipping. Not built yet: grades, errands, assessments, the semester calendar, the parameter panel and dashboard.
+- **Semester 1 (now):** rule-based prototype due at Week 12. Built so far: campus map, timetable generator, walking, lateness, attendance, student states (grades, stress, energy), rule-based skipping, assessments and grades over one semester of repeating weeks. Not built yet: errands (study and food stops), the semester calendar (breaks, exams, semester after semester), the parameter panel and dashboard.
 - **Semester 2:** small ML models (logistic regression, decision trees) trained in Python on OULAD / UCI Dropout data plus sim logs, exported to JSON, and **run in GDScript** (`MLDecision.gd`). A Python sidecar comes later, only if time allows. We don't use ONNX, C#, or GDExtension plugins.
 - The technical contribution is the scheduling, travel time and continuous-time mechanics, plus the algorithms we write ourselves (Dijkstra, knapsack, TSP). Visuals support the explanation; they don't replace it.
 
@@ -30,13 +30,14 @@ On Windows the executable is something like `Godot_v4.7.2-stable_win64.exe`. Use
 - Time is a `float` in minutes from Monday 00:00 (`SimTime`).
 - `SimEngine` (RefCounted) owns the `EventQueue` (min-heap on time, then seq) and applies the travel, lateness and attendance rules. It has **no Node, scene or UI dependencies**.
 - `DecisionModel.decide(student, context, rng) -> Action` (`ATTEND_NEXT`, `SKIP_NEXT`, `LEAVE_CAMPUS`). The model decides *what*; the engine decides *when* and *how long*. `RuleDecision` (used by the app) and later ML models extend this class.
-- `StateEffects` (`sim/students/`) holds the determinants table and is the **only** place that changes a student's stress, energy and satisfaction. The engine calls `StateEffects.apply(student, event, amount)`. Its numbers are placeholders until each has a source.
+- `StateEffects` (`sim/students/`) holds the determinants table and is the **only** place that changes a student's stress and energy. The engine calls `StateEffects.apply(student, event, amount)`. Each size has a source or a stated assumption in docs/STUDENT_MODEL.md; change the two together.
+- `Grades` (`sim/students/`) is the grade formula: a mark is hours put in against hours expected. `AssessmentPlanner` (`sim/timetable/`) sets the due weeks. The engine marks assessments at each `WEEK_END`.
 - `DecisionContext.to_features()` is the single feature vector used for decisions, logging and ML training. Don't rename its keys once data has been logged.
 - Autoloads: `Params` (all adjustable values plus `SPECS` for ranges and UI), `EventBus` (all cross-system signals), `Stats` (aggregates from signals).
 - `SimRunner` (Node) drives the engine in real time. Tests and headless runs call `engine.advance_to()` / `engine.run_to_end()` directly.
 - UI and MapView only listen to `EventBus` and read `Stats` / `Params`. They never change engine state directly.
 - `sim/` is grouped by what the code models: `core/`, `campus/`, `timetable/`, `students/`. New files go in the folder docs/ARCHITECTURE.md names for them.
-- Student model (docs/STUDENT_MODEL.md): the four states are driven separately by determinants and **never calculated from each other**. Nothing changes grades directly. Low energy or high stress can change a student's choice.
+- Student model (docs/STUDENT_MODEL.md): the three states (grades, stress, energy) are driven separately by determinants and **never calculated from each other**. Nothing changes grades directly. Only low energy changes a student's choice in v1. Satisfaction and stress-triggered skipping (burnout, Resilience) are Good to have since 2026-10-02 and are not in the code. Decision #23 in docs/DECISIONS.md lists choices the code follows that the team has not confirmed yet.
 
 ## Rules to follow
 
