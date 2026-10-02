@@ -4,17 +4,21 @@ extends RefCounted
 ##
 ## Holds the event queue and the clock, and applies the rules for travel, lateness
 ## and attendance. It tells StateEffects what each student did, which moves their
-## stress, energy and satisfaction. It has no visuals and no Node dependency, so it runs the same in
-## the game, in headless data-logging runs and in unit tests.
+## stress and energy, and marks each assessment when it is due. It has no visuals
+## and no Node dependency, so it runs the same in the game, in headless
+## data-logging runs and in unit tests.
 ##
 ## Flow for one student on one day:
 ##   DAY_START -> STUDENT_DECIDE (timed so they can arrive a few minutes early)
 ##   -> ATTEND: walk (travel_minutes) -> STUDENT_ARRIVE -> on time / late / too late
 ##   -> CLASS_END -> STUDENT_DECIDE for the next class ... -> no classes left: go home.
 ##
+## The timetable is one week long. At each WEEK_END the assessments due that week
+## are marked, and every session moves forward a week, so the timetable repeats.
+##
 ## Usage:
 ##   var engine := SimEngine.new()
-##   engine.setup(campus, sessions, students, DecisionModel.new())
+##   engine.setup(campus, sessions, students, DecisionModel.new(), assessments)
 ##   engine.advance_to(engine.now + 30.0)   # or engine.run_to_end()
 
 ## Current simulation time in minutes from Monday 00:00.
@@ -26,6 +30,7 @@ var campus: Campus
 var decision_model: DecisionModel
 var students: Array[Student] = []
 var sessions: Array[ClassSession] = []
+var assessments: Array[Assessment] = []
 var events_processed: int = 0
 
 var _queue: EventQueue = EventQueue.new()
@@ -41,11 +46,13 @@ func setup(
 	p_sessions: Array[ClassSession],
 	p_students: Array[Student],
 	p_model: DecisionModel,
+	p_assessments: Array[Assessment] = [],
 ) -> void:
 	campus = p_campus
 	sessions = p_sessions
 	students = p_students
 	decision_model = p_model
+	assessments = p_assessments
 	rng.seed = Params.random_seed
 	now = 0.0
 	events_processed = 0
@@ -65,12 +72,15 @@ func setup(
 	for session: ClassSession in sessions:
 		_sessions_by_id[session.id] = session
 		session.present_ids.clear()
-		if session.start < end_time:
-			schedule(SimEvent.new(session.start, SimEvent.Type.CLASS_START, session.id))
-			schedule(SimEvent.new(session.end, SimEvent.Type.CLASS_END, session.id))
+		_schedule_class(session)
 
-	for day: int in range(Params.days_to_simulate):
-		schedule(SimEvent.new(SimTime.at(day, 0), SimEvent.Type.DAY_START, day))
+	# A week ends before the next Monday starts, so the timetable has moved on
+	# by the time students plan that day. The last week can end with the run.
+	for day: int in range(Params.days_to_simulate + 1):
+		if day > 0 and day % SimTime.DAYS_PER_WEEK == 0:
+			schedule(SimEvent.new(SimTime.at(day, 0), SimEvent.Type.WEEK_END, day / SimTime.DAYS_PER_WEEK))
+		if day < Params.days_to_simulate:
+			schedule(SimEvent.new(SimTime.at(day, 0), SimEvent.Type.DAY_START, day))
 
 	EventBus.run_started.emit(Params.random_seed)
 
@@ -123,6 +133,8 @@ func get_session(session_id: int) -> ClassSession:
 
 func _dispatch(event: SimEvent) -> void:
 	match event.type:
+		SimEvent.Type.WEEK_END:
+			_on_week_end(event.subject_id)
 		SimEvent.Type.DAY_START:
 			_on_day_start(event.subject_id)
 		SimEvent.Type.CLASS_START:
@@ -140,10 +152,26 @@ func _dispatch(event: SimEvent) -> void:
 func _on_day_start(day: int) -> void:
 	_attended_today.clear()
 	EventBus.day_started.emit(day)
+	var near: Dictionary = _deadlines_near(day)
 	for student: Student in students:
 		StateEffects.start_day(student)
+		_apply_deadlines(student, near)
 		_apply_morning(student)
 		_schedule_next_decision(student, now)
+
+
+## Marks the assessments due in the week that just ended (1 = the first week),
+## then moves the timetable on a week if the run continues.
+func _on_week_end(week: int) -> void:
+	for assessment: Assessment in assessments:
+		if assessment.due_week == week:
+			_mark(assessment)
+	EventBus.week_ended.emit(week)
+	if now >= end_time:
+		return
+	for session: ClassSession in sessions:
+		session.start += SimTime.MINUTES_PER_WEEK
+		_schedule_class(session)
 
 
 func _on_class_end(session: ClassSession) -> void:
@@ -205,6 +233,9 @@ func _on_student_arrive(student: Student, session: ClassSession) -> void:
 
 	var is_late: bool = minutes_late > FixedSettings.LATE_AFTER_MINUTES
 	student.attended_count += 1
+	# The student still gets in when the room is over capacity (decision #23).
+	if session.capacity > 0 and session.present_ids.size() >= session.capacity:
+		StateEffects.apply(student, StateEffects.OVERCROWDED_ROOM)
 	if is_late:
 		student.late_count += 1
 		StateEffects.apply(student, StateEffects.ARRIVED_LATE)
@@ -219,6 +250,44 @@ func _on_student_arrive(student: Student, session: ClassSession) -> void:
 
 
 # --- Helpers ------------------------------------------------------------------
+
+func _schedule_class(session: ClassSession) -> void:
+	if session.start < end_time:
+		schedule(SimEvent.new(session.start, SimEvent.Type.CLASS_START, session.id))
+		schedule(SimEvent.new(session.end, SimEvent.Type.CLASS_END, session.id))
+
+
+## Gives every student enrolled in the unit their mark for this assessment:
+## the hours they have put in against the hours expected by its due week.
+func _mark(assessment: Assessment) -> void:
+	var expected: float = Grades.hours_expected(assessment.due_week)
+	for student: Student in students:
+		if student.unit_codes.has(assessment.unit_code):
+			var mark: float = Grades.mark(student.hours_put_in(assessment.unit_code), expected)
+			student.add_mark(assessment.unit_code, mark, assessment.weight)
+
+
+## How many deadlines are near on `day`, per unit. A deadline is near on each of
+## the FixedSettings.DEADLINE_NEAR_DAYS days before it is due.
+func _deadlines_near(day: int) -> Dictionary:
+	var near: Dictionary = {}  # StringName unit code -> int
+	for assessment: Assessment in assessments:
+		var days_left: int = assessment.due_day() - day
+		if days_left > 0 and days_left <= FixedSettings.DEADLINE_NEAR_DAYS:
+			near[assessment.unit_code] = int(near.get(assessment.unit_code, 0)) + 1
+	return near
+
+
+## Each near deadline in one of the student's units raises their stress today.
+func _apply_deadlines(student: Student, near: Dictionary) -> void:
+	if near.is_empty():
+		return
+	var count: int = 0
+	for unit_code: StringName in student.unit_codes:
+		count += int(near.get(unit_code, 0))
+	if count > 0:
+		StateEffects.apply(student, StateEffects.DEADLINE_NEAR, float(count))
+
 
 ## The trip to campus and an early first class cost energy before the day starts.
 ## Applied before the first decision, so a tired student may skip their first class.

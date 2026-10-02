@@ -50,7 +50,8 @@ func _start_run() -> void:
 	var sessions: Array[ClassSession] = result["sessions"]
 	_students = result["students"]
 	_map.setup(_campus, _students)
-	_runner.start_run(_campus, sessions, _students, RuleDecision.new())
+	var assessments: Array[Assessment] = AssessmentPlanner.plan(AssessmentPlanner.unit_codes_of(_units))
+	_runner.start_run(_campus, sessions, _students, RuleDecision.new(), assessments)
 	_runner.engine.advance_to(SimTime.at(0, Params.day_start_hour) - LEAD_IN_MINUTES)
 
 
@@ -58,12 +59,16 @@ func _stats_text() -> String:
 	var counts: Dictionary = {}
 	var stress: float = 0.0
 	var energy: float = 0.0
-	var satisfaction: float = 0.0
+	var grade_total: float = 0.0
+	var graded: int = 0
 	for student: Student in _students:
 		counts[student.state] = int(counts.get(student.state, 0)) + 1
 		stress += student.stress
 		energy += student.energy
-		satisfaction += student.satisfaction
+		var grade: float = student.grade()
+		if grade != Grades.NO_GRADE:
+			grade_total += grade
+			graded += 1
 	var total: float = maxf(1.0, float(_students.size()))
 	return "\n".join([
 		"Students: %d" % _students.size(),
@@ -79,7 +84,7 @@ func _stats_text() -> String:
 		"",
 		"Average stress: %.1f" % (stress / total),
 		"Average energy: %.1f" % (energy / total),
-		"Average satisfaction: %.1f" % (satisfaction / total),
+		"Average grade: %s" % ("no assessment due yet" if graded == 0 else "%.1f" % (grade_total / float(graded))),
 	])
 
 

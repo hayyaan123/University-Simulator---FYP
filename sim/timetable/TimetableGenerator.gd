@@ -113,8 +113,6 @@ func _make_students() -> Array[Student]:
 		var student: Student = Student.new(id, _rng.randi_range(1, MAX_YEAR))
 		student.commute_minutes = float(Params.average_commute_minutes) * _rng.randf_range(
 			1.0 - FixedSettings.COMMUTE_SPREAD, 1.0 + FixedSettings.COMMUTE_SPREAD)
-		student.resilience = clampf(_rng.randfn(Params.resilience, FixedSettings.RESILIENCE_SPREAD),
-			StateEffects.STATE_MIN, StateEffects.STATE_MAX)
 		students.append(student)
 	_student_busy = PackedByteArray()
 	_student_busy.resize(students.size() * _week_len)

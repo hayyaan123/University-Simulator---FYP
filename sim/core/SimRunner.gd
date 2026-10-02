@@ -18,9 +18,10 @@ func start_run(
 	sessions: Array[ClassSession],
 	students: Array[Student],
 	model: DecisionModel,
+	assessments: Array[Assessment] = [],
 ) -> void:
 	engine = SimEngine.new()
-	engine.setup(campus, sessions, students, model)
+	engine.setup(campus, sessions, students, model, assessments)
 	pause()
 
 

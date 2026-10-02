@@ -3,8 +3,8 @@ extends RefCounted
 ## One simulated student.
 ##
 ## Holds the student's timetable, where they are, what they are doing, and the
-## states that the determinants move (stress, energy, satisfaction) and that
-## decision models read. See docs/STUDENT_MODEL.md.
+## states that the determinants move (stress, energy) and that decision models
+## read. See docs/STUDENT_MODEL.md.
 
 enum State {
 	OFF_CAMPUS,  ## Not on campus.
@@ -27,10 +27,6 @@ var target_session: ClassSession = null
 var stress: float = StateEffects.START_STRESS
 ## 0..100. Drains with class hours and walking; back to full each morning.
 var energy: float = StateEffects.START_ENERGY
-## 0..100. Falls with campus frustrations such as arriving late.
-var satisfaction: float = StateEffects.START_SATISFACTION
-## Stress above this means the student has burned out.
-var resilience: float = StateEffects.DEFAULT_RESILIENCE
 ## Minutes this student travels to reach campus.
 var commute_minutes: float = 0.0
 
@@ -38,6 +34,11 @@ var commute_minutes: float = 0.0
 var hours_attended: Dictionary = {}  # StringName unit code -> float
 ## Hours of study in free time so far, per unit.
 var hours_studied: Dictionary = {}   # StringName unit code -> float
+## Assessment marks so far, per unit, with each assessment's weight.
+var marks: Dictionary = {}           # StringName unit code -> Array of float
+var mark_weights: Dictionary = {}    # StringName unit code -> Array of float
+## Units this student takes, in timetable order. Set with the timetable.
+var unit_codes: Array[StringName] = []
 ## When the student sat down in the class they are in now.
 var joined_class_at: float = 0.0
 ## When the last class they attended today ended (-INF if none yet).
@@ -57,6 +58,10 @@ func _init(p_id: int, p_year: int = 1) -> void:
 func set_timetable(sessions: Array[ClassSession]) -> void:
 	timetable = sessions.duplicate()
 	timetable.sort_custom(func(a: ClassSession, b: ClassSession) -> bool: return a.start < b.start)
+	unit_codes.clear()
+	for session: ClassSession in timetable:
+		if not unit_codes.has(session.unit_code):
+			unit_codes.append(session.unit_code)
 
 
 ## First session that starts at or after `time`, or null.
@@ -94,8 +99,26 @@ func hours_put_in(unit_code: StringName) -> float:
 	return float(hours_attended.get(unit_code, 0.0)) + float(hours_studied.get(unit_code, 0.0))
 
 
-func is_burned_out() -> bool:
-	return stress > resilience
+## Records the mark for one assessment of a unit.
+func add_mark(unit_code: StringName, mark: float, weight: float) -> void:
+	if not marks.has(unit_code):
+		marks[unit_code] = []
+		mark_weights[unit_code] = []
+	marks[unit_code].append(mark)
+	mark_weights[unit_code].append(weight)
+
+
+## Grade (0 to 100) for one unit from the assessments marked so far. Grades.NO_GRADE if none yet.
+func unit_grade(unit_code: StringName) -> float:
+	return Grades.unit_grade(marks.get(unit_code, []), mark_weights.get(unit_code, []))
+
+
+## The grades state: the average grade over the units that have a mark. Grades.NO_GRADE if none yet.
+func grade() -> float:
+	var total: float = 0.0
+	for unit_code: StringName in marks:
+		total += unit_grade(unit_code)
+	return Grades.NO_GRADE if marks.is_empty() else total / float(marks.size())
 
 
 func attendance_rate() -> float:

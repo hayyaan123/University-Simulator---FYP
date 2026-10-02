@@ -85,21 +85,15 @@ func test_same_seed_gives_the_same_timetable() -> void:
 		assert_eq(first[i].enrolled_ids, second[i].enrolled_ids)
 
 
-func test_students_get_their_own_commute_and_resilience() -> void:
+func test_students_get_their_own_commute() -> void:
 	Params.set_value(&"average_commute_minutes", 40)
-	Params.set_value(&"resilience", 60.0)
 	var students: Array[Student] = _generate()["students"]
 	var commute_total: float = 0.0
-	var resilience_total: float = 0.0
 	var commutes: Dictionary = {}
 	for student: Student in students:
 		assert_gte(student.commute_minutes, 40.0 * (1.0 - FixedSettings.COMMUTE_SPREAD))
 		assert_lte(student.commute_minutes, 40.0 * (1.0 + FixedSettings.COMMUTE_SPREAD))
-		assert_gte(student.resilience, StateEffects.STATE_MIN)
-		assert_lte(student.resilience, StateEffects.STATE_MAX)
 		commute_total += student.commute_minutes
-		resilience_total += student.resilience
 		commutes[student.commute_minutes] = true
 	assert_gt(commutes.size(), 1, "students differ from each other")
 	assert_almost_eq(commute_total / students.size(), 40.0, 3.0)
-	assert_almost_eq(resilience_total / students.size(), 60.0, 3.0)
