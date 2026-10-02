@@ -90,6 +90,8 @@ Written to `user://logs/<run_id>/` by the run logger. The column names are chose
 
 Trained in Python (`tools/`) and loaded by `MLDecision.gd`. `features` lists the `DecisionContext.to_features()` keys, in the order the model expects.
 
+The feature names below are examples. `motivation` and `tiredness` will be replaced by the student states in `STUDENT_MODEL.md` before any data is logged.
+
 **Logistic regression**
 ```json
 {

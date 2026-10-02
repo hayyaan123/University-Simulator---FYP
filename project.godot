@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="University Simulator 2026"
+config/name="Campus Simulator"
 config/description="Discrete-event campus simulation of student behaviour under timetabling, travel time and resourcing conditions."
 run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")

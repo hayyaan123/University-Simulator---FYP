@@ -27,12 +27,18 @@
 
 ## Pull requests
 
-1. Open a PR into `main` and fill in the template.
+1. Open a PR into `main` and fill in the template (`.github/pull_request_template.md`).
 2. Link the issue (`Closes #12`).
 3. Get **one approval** from a teammate, ideally the person whose code yours connects to.
 4. The author merges after approval ("Squash and merge").
 
 Reviewers check that the change works, is tested, follows `docs/CODE_STYLE.md`, and doesn't break the layer rules in `docs/ARCHITECTURE.md`.
+
+## Where files go
+
+`docs/ARCHITECTURE.md` has the folder layout and the rule for where a new file belongs. In short: simulation code goes in a subfolder of `sim/` named after what it models, decisions go in `decisions/`, and anything that draws goes in `scenes/` or `ui/`.
+
+To move a script, use `git mv` and move its `.gd.uid` file with it if you have one. Scripts are found by `class_name`, so only `.tscn` files that point at the old path need fixing.
 
 ## Scenes and conflicts
 
@@ -45,7 +51,7 @@ Reviewers check that the change works, is tested, follows `docs/CODE_STYLE.md`, 
 ## Tasks
 
 - GitHub Issues hold tasks, and the GitHub Project board has the columns **To do → Doing → Review → Done**.
-- Every task in `docs/ROADMAP.md` becomes an issue using the Task template.
+- Every task in `docs/ROADMAP.md` becomes an issue using the Task template (`.github/ISSUE_TEMPLATE/task.md`).
 - Move your card when you start a task and when you open the PR. We review the board at the weekly meeting.
 
 ## Definition of done
