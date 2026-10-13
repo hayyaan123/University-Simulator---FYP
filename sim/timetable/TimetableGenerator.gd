@@ -63,7 +63,7 @@ func generate(campus: Campus, units: Array, rng: RandomNumberGenerator) -> Dicti
 	_room_busy.fill(0)
 	unplaced = 0
 
-	var chosen_units: Array = units.slice(0, mini(Params.unit_count, units.size()))
+	var chosen_units: Array = units
 	var students: Array[Student] = _make_students()
 	var enrolled: Array[Array] = _enrol(students, chosen_units)
 
@@ -110,7 +110,10 @@ static func load_units(path: String) -> Array:
 func _make_students() -> Array[Student]:
 	var students: Array[Student] = []
 	for id: int in range(Params.student_count):
-		students.append(Student.new(id, _rng.randi_range(1, MAX_YEAR)))
+		var student: Student = Student.new(id, _rng.randi_range(1, MAX_YEAR))
+		student.commute_minutes = float(Params.average_commute_minutes) * _rng.randf_range(
+			1.0 - FixedSettings.COMMUTE_SPREAD, 1.0 + FixedSettings.COMMUTE_SPREAD)
+		students.append(student)
 	_student_busy = PackedByteArray()
 	_student_busy.resize(students.size() * _week_len)
 	_student_busy.fill(0)

@@ -6,6 +6,7 @@ extends RefCounted
 ## scheduled in (seq), so every run with the same seed gives the same result.
 
 enum Type {
+	WEEK_END,        ## A week is over; its assessments are marked and the timetable repeats.
 	DAY_START,       ## A new day begins; students plan their first class.
 	CLASS_START,     ## A class session begins.
 	CLASS_END,       ## A class session ends; students inside decide what to do next.

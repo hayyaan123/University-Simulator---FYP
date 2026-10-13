@@ -57,7 +57,7 @@ All data files are JSON with tab indentation and live in `data/`. Ids are string
 }
 ```
 
-The timetable generator reads this file along with `Params` (lecture and tutorial lengths, day start and end, slot gap, `units_per_student`, `student_count`). If `Params.unit_count` is smaller than the file, it uses the first N units. `enrolment` is used as a weight when students pick units, and `year` makes students more likely to pick units from their own year level. The current `data/units.json` is a placeholder list that still needs checking against the Monash handbook.
+The timetable generator reads this file along with `Params` (lecture and tutorial lengths, day start and end, slot gap, `units_per_student`, `student_count`). It uses every unit in the file. `enrolment` is used as a weight when students pick units, and `year` makes students more likely to pick units from their own year level. The current `data/units.json` is a placeholder list that still needs checking against the Monash handbook.
 
 ## Scenario files (data/scenarios/*.json)
 
@@ -90,15 +90,13 @@ Written to `user://logs/<run_id>/` by the run logger. The column names are chose
 
 Trained in Python (`tools/`) and loaded by `MLDecision.gd`. `features` lists the `DecisionContext.to_features()` keys, in the order the model expects.
 
-The feature names below are examples. `motivation` and `tiredness` will be replaced by the student states in `STUDENT_MODEL.md` before any data is logged.
-
 **Logistic regression**
 ```json
 {
 	"type": "logistic_regression",
 	"name": "attend_v1",
-	"features": ["expected_minutes_late", "motivation", "tiredness", "minute_of_day"],
-	"scaler": { "mean": [2.1, 0.8, 0.3, 720.0], "std": [4.0, 0.15, 0.2, 180.0] },
+	"features": ["expected_minutes_late", "energy", "stress", "minute_of_day"],
+	"scaler": { "mean": [2.1, 75.0, 10.0, 720.0], "std": [4.0, 15.0, 8.0, 180.0] },
 	"weights": [-0.42, 2.3, -1.1, -0.05],
 	"bias": 0.7,
 	"positive_class": "ATTEND_NEXT",
@@ -112,7 +110,7 @@ Prediction: `p = sigmoid(bias + Σ weights[i] * (x[i] - mean[i]) / std[i])`
 {
 	"type": "decision_tree",
 	"name": "dropout_risk_v1",
-	"features": ["attendance_rate", "year", "motivation"],
+	"features": ["attendance_rate", "year", "satisfaction"],
 	"classes": ["low", "high"],
 	"nodes": [
 		{ "feature": 0, "threshold": 0.62, "left": 1, "right": 2 },

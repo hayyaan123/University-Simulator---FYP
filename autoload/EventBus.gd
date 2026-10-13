@@ -10,6 +10,8 @@ signal run_finished()
 signal sim_time_changed(time: float)
 
 signal day_started(day: int)
+## Emitted when week `week` (1 = the first) is over, after its assessments are marked.
+signal week_ended(week: int)
 signal class_started(session: ClassSession)
 signal class_ended(session: ClassSession)
 
