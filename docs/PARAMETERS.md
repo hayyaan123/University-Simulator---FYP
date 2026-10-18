@@ -110,3 +110,36 @@ Owners and order are in `ROADMAP.md`.
 - **Food outlets:** the map data has no outlets yet. Add them to `campus.json` with a service time and a queue, and document the format in `DATA_FORMATS.md` in the same change.
 - **Parameters are set once per run** (decision #17). `Params` is read when a run starts and doesn't change while it plays. To try different settings, change them and press Reset to start a new run. Path closures are the one live control: they can be clicked while the sim runs.
 - **Adding a parameter:** a typed var plus a `SPECS` entry in `Params.gd`, the value in `data/scenarios/default.json`, a row in this file with its justification, and a source for the default.
+
+
+---
+
+## Research notes for the current defaults (Arya, 2026-10-18)
+
+**Documentation review only.** No ranges, defaults, tiers, `Params.gd` entries or simulation outcomes were changed by this research contribution. See [the full 15-factor evidence review](RESEARCH_15_FACTORS.md) and [the validation plan](RESEARCH_VALIDATION.md). "Source-supported" means the reference helps justify an input's broad context; it **does not** mean a paper specifies the numeric slider value.
+
+| # | Parameter / existing default | Review of support for the **numeric default** | Source or needed verification |
+| --- | --- | --- | --- |
+| 1 | Students: 500 | **Assumption:** repeatable test population, not official campus enrolment | [Research #1](RESEARCH_15_FACTORS.md#1-students-student_count); campus enrolment and room capacities needed |
+| 2 | Units/student: 4 | **Institutionally supported:** four typical 6-point units/semester | [Monash Handbook glossary](https://www.monash.edu/students/handbooks/help/handbook-glossary) |
+| 3 | Average commute: 45 min | **Assumption:** existing source justifies testing commute, not 45 minutes | [Kobus et al.](https://doi.org/10.1016/j.regsciurbeco.2015.03.001); local commute data needed |
+| 4 | Resilience: 70 | **Parked; do not reactivate:** no defensible burnout decision rule | [Ansari & Iqbal](https://doi.org/10.1016/j.paid.2024.113006); no source for a 70-point threshold |
+| 5 | Teaching day: 08:00–18:00 | **Scenario assumption:** early-start association supported, time window not prescribed | [Yeo et al.](https://doi.org/10.1038/s41562-023-01531-x) |
+| 6 | Class length: 120 / 60 min | **Timetable assumption:** longer activity creates opportunities for fatigue/breaks | [Movement-break study](https://doi.org/10.3390/ijerph18115589) |
+| 7 | Gap: 10 min | **Timetable assumption:** needs evidence from actual walking routes | [Research #7](RESEARCH_15_FACTORS.md#7-gap-between-slots-slot_gap_minutes) |
+| 8 | Room capacity: 1.0× | **Neutral reference**, not an empirical crowding ratio | [De Paola & Scoppa](https://doi.org/10.1111/j.1467-9957.2010.02208.x) |
+| 9 | Food outlets: 4 | **Not implemented; assumed** count; need map and queue data | [Research #9](RESEARCH_15_FACTORS.md#9-food-outlets-open-not-yet-in-paramsgd) |
+| 10 | Assessments/unit: 3 | **Scenario assumption:** no universal institutional three-assessment rule | [Pitt et al.](https://doi.org/10.1177/1469787417731194) |
+| 11 | Deadline clustering: 0.5 | **Scenario midpoint**, not research-estimated average | [Research #11](RESEARCH_15_FACTORS.md#11-deadline-clustering-deadline_clustering) |
+| 12 | Recordings: 0% | **Future control condition**; not prevalence evidence | [Banerjee review](https://doi.org/10.1016/j.compedu.2020.104032) |
+| 13 | Staff reliability: 2% / 5 min | **Future scenario assumption:** no staff punctuality dataset supplied | [Research #13](RESEARCH_15_FACTORS.md#13-staff-reliability-good-to-have) |
+| 14 | Tutors/unit: 3 | **Future scenario assumption:** no verified staffing model/data supplied | [Research #14](RESEARCH_15_FACTORS.md#14-tutors-per-unit-good-to-have) |
+| 15 | Friend influence: 0.3 | **Future scenario assumption:** peer literature is mixed | [Research #15](RESEARCH_15_FACTORS.md#15-friend-influence-good-to-have) |
+
+### Open review questions (no changes made)
+
+1. **Room capacity:** the Must-have table above says overfull rooms "turn students away", while the revised `STUDENT_MODEL.md` proposes letting them in with a stress and energy cost. A team decision is needed; do not silently implement both.
+2. **Zero-gap effect:** the team's first check runs showed no late arrivals even with a zero-minute gap. Verify route distances and the back-to-back-class determinant before defending the 10-minute default as improving punctuality.
+3. **Deadline clustering:** it changes when pressure is felt, but previous runs showed the same end-of-semester stress at clustering 0 and 1. Compare weekly peaks and test after food/breaks exist.
+4. **Assumption-sized numbers:** for each active effect in `StateEffects.EFFECTS`, keep published real-world findings separate from internal 0–100 points. The effect sizes should be reviewed with the sensitivity runs, not silently adjusted from literature correlations.
+5. **Good-to-have scope:** do not add Semester 2 sliders without the staff, recording, tutor-group and friend-network systems that make them affect outcomes.
