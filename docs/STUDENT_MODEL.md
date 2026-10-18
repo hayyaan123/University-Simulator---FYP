@@ -265,3 +265,44 @@ If a result looks wrong, change a number in the effects table. Don't add a speci
 | State averages in `Stats` and the semester report | The dashboard work (Siw) |
 
 Until study and food stops exist, grades stay near 50 at most and nothing lowers stress.
+
+
+---
+
+## Evidence audit and effect-size validation notes (Arya, 2026-10-18)
+
+This is a **research annotation**, not a proposal to change `StateEffects.EFFECTS`, `Grades.gd`, or the three-state causal rules. The accepted model stays intact. References are listed in [the 15-factor research review](RESEARCH_15_FACTORS.md) and in the existing Sources section above. The current effect sizes are **anchors on a synthetic 0–100 scale**, not direct estimates from the cited papers.
+
+### What the evidence does and does not justify
+
+| Mechanism or existing effect | Research supports | What remains an assumption | Validation priority |
+| --- | --- | --- | --- |
+| Attendance/study hours → knowledge-based grade | Attendance and marks are associated; Monash's typical 12-hour weekly total | Equal worth of an hour studying and an hour attending; six **on-campus** hours; linear grade conversion | High: compare attendance-only and study-only extreme cases |
+| Early start: −25 energy/hour before 09:00 | Earlier classes associated with shorter sleep, worse attendance | Synthetic −25 points and precise calibration across all schedules | High: verify 08:00 vs later attendance |
+| Commute/walking: −0.167 energy/min | Travel has a time cost; commute related to university presence | One energy point per six minutes; identical rate for commuting/walking | Medium: 0.5×, 1×, 1.5× and long-commute cases |
+| Class/study: +0.1 stress/hour, −10 energy/hour | Sustained activity and workload can be tiring; stress relates to academic pressure | Ten activity hours exhausting all energy; +0.1 stress per hour | High: 2/4/6 units, inspect saturation |
+| Skipping: +5 energy/class | Free time can allow rest | Exactly half an active hour recovered | Medium: compare skip outcomes without special grade penalties |
+| Arriving late: +1 stress/event | Lateness may be unpleasant | One point as the stress scale reference | Medium: first establish genuine lateness events |
+| Deadline within 7 days: +0.5 stress/day/deadline | Assessment pressure linked to weekly stress | Seven-day window, +0.5 per day and additive accumulation | **High:** clustered deadlines and weekly peak stress |
+| Food stop: −0.5 stress, +20 energy | Rest and adequate food access can matter for wellbeing | Identical benefits at every outlet and two-active-hour energy recovery | **High after implementation**: queue/stop counts |
+| Break: −3 stress/day | Time away can improve well-being | Fixed three points and no explicit energy regeneration | High once semester calendar exists |
+| Overcrowded room: +3 stress, −2 energy | Density may increase arousal; university class size matters | Effect magnitudes and whether students enter or are turned away | **High:** clarify the rule, then test |
+| Back-to-back: +0.5 stress, −2 energy/class | Break studies support opportunities to recover/attend | Fixed point penalties and chosen gap threshold | Medium: zero-gap event logging |
+| Energy-to-skip curve `0.03 + 0.97×(energy lost/100)²` | Early-class attendance contrast offers a calibration target | 3% rested skip probability; quadratic shape; stable across student groups | **High:** calculate probabilities and compare runs |
+
+**Selected evidence safeguards**
+
+- The 2023 early-class study can help justify a **direction and attendance calibration target**, not a literal `−25 energy` biological measurement. The primary study requires further full-text confirmation (existing source 4).
+- In the literature, short breaks and recovery have variable contexts. Food access, lunch breaks and time off are **not interchangeable** interventions; their current numeric effects are simplifications (sources 7–10 and [R11–R13](RESEARCH_15_FACTORS.md#references-and-verification-notes)).
+- Peer/social effects and resilience should not be added to grades/stress/energy in v1: resilience is parked and the friends system is Good-to-have. This follows existing decisions #19–#23.
+- Earlier check runs, including the 500-student default, are **historical results from 2026-10-02 documented above**. The review does not claim that these were rerun on 2026-10-18.
+
+### Concrete questions for the next team run
+
+1. Does the energy-to-skip rule return **0.03 at energy 100**, **0.2725 at energy 50**, and **1.00 at energy 0**? These are algebraic checks, not attendance measurements.
+2. If total deadline exposure is the same, do clustering settings 0 and 1 differ in **weekly maximum stress** once food stops/breaks exist? If not, identify which determinant or recovery step fails to separate them.
+3. With a zero-minute timetable gap, are actual route times long enough to trigger lateness? If not, a 10-minute gap should not be claimed to change punctuality.
+4. Does higher student count change the **number of overcrowded sessions per 100 students** without double-counting both turning away and entry stress?
+5. When all 0–100 state effects are multiplied by 0.5 or 1.5, which cases hit the caps at 0 and 100? Saturation can mask meaningful differences.
+
+Step-by-step experiment matrix, baseline references, output columns and an empty report table: [`RESEARCH_VALIDATION.md`](RESEARCH_VALIDATION.md).
