@@ -176,7 +176,7 @@ The agreed list is the 15 in [PARAMETERS.md](PARAMETERS.md). `Params.gd` holds t
 | Attendance rate (overall, by unit, by day), skips by reason | `Stats`, dashboard | In `Stats` |
 | Late arrivals, average minutes late, too late to enter | `Stats`, dashboard | In `Stats` |
 | Walking time between back-to-back classes | Dashboard | To build |
-| Room use, students turned away | Dashboard | To build |
+| Room use, overcrowded classes | Dashboard | To build |
 | Food outlet queue length and wait | Dashboard | To build |
 | Students per path at each hour | Dashboard | To build |
 

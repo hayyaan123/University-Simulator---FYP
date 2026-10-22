@@ -111,13 +111,8 @@ If time runs short, cut in this order: path closures, the Trimester preset, year
 
 ## Open decisions
 
-- [ ] Confirm or change the proposals in decision #23. The code already follows them:
-    - an hour of study counts the same as an hour of class
-    - grades are measured against 6 hours per unit per week on campus, so class alone gives about 50
-    - a student still gets into an overcrowded room and takes a stress hit (our supervisor's preference)
-    - a deadline is "near" for 7 days
-    - a student with no energy always skips
-    - Resilience is parked, leaving 10 Must parameters
+- [x] Confirm or change the proposals in decision #23. Confirmed on 2026-10-09 (decision #24): study hour = class hour, 6 hours per unit on campus, students still get into an overcrowded room, low energy raises the skip chance, Resilience parked
+- [ ] Still to confirm from decision #23: a deadline is "near" for 7 days, and the effect sizes come from two anchors
 - [ ] The effect sizes in `docs/STUDENT_MODEL.md`: confirm or change each assumed size
 - [ ] The six extreme cases in `docs/STUDENT_MODEL.md`: confirm or change the answers
 - [ ] Grades: is "knowledge" a separate hidden value, or is it what the grades state already means? As built, it is what the grades state means (our supervisor is fine with either and wants as few hidden values as possible)

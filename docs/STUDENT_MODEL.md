@@ -54,7 +54,7 @@ A little tiredness changes little; the chance reaches 1 at zero energy. The curv
 
 **Why a straight line.** Class attendance is the best single predictor of grades (r = 0.43 with class grades, source 2), so hours attended driving the mark is supported. How much each extra hour is worth is not something the sources give us, so the straight line with a cap is a stated assumption. Study time on its own is a weak predictor of grades (source 3), which is a known limit of counting a study hour the same as a class hour.
 
-This formula is proposed (decision #23) and is what the code does. The team can still change it.
+The team confirmed this formula on 2026-10-09 (decision #24), and it is what the code does.
 
 ## Determinants
 
@@ -79,7 +79,7 @@ Arrows show the direction of the effect; "–" means no effect.
 Changes on 2026-10-02:
 
 - **Food stop** now lowers stress as well as raising energy (decision #21). Every outlet has the same effect; we don't model different kinds of outlet.
-- **Overcrowded room** replaces "turned away from a full room". The student still gets in and takes a large stress hit and a slight energy hit, which is our supervisor's preference. He also said turning them away comes to the same thing, so this is proposed (decision #23), not settled.
+- **Overcrowded room** replaces "turned away from a full room". The student still gets in and takes a large stress hit and a slight energy hit, which is our supervisor's preference. He also said turning them away comes to the same thing. The team confirmed this on 2026-10-09 (decision #24).
 - **Hours of study** now raises stress the same way class does (decision #23). Before, studying beat attending on every count.
 - **Queueing at a food outlet** is no longer a row. It only moved satisfaction. Queue time still matters: it uses up free time, so fewer food stops and study hours fit in. That is how Food outlets still reaches the metrics.
 
@@ -286,7 +286,7 @@ This is a **research annotation**, not a proposal to change `StateEffects.EFFECT
 | Deadline within 7 days: +0.5 stress/day/deadline | Assessment pressure linked to weekly stress | Seven-day window, +0.5 per day and additive accumulation | **High:** clustered deadlines and weekly peak stress |
 | Food stop: −0.5 stress, +20 energy | Rest and adequate food access can matter for wellbeing | Identical benefits at every outlet and two-active-hour energy recovery | **High after implementation**: queue/stop counts |
 | Break: −3 stress/day | Time away can improve well-being | Fixed three points and no explicit energy regeneration | High once semester calendar exists |
-| Overcrowded room: +3 stress, −2 energy | Density may increase arousal; university class size matters | Effect magnitudes and whether students enter or are turned away | **High:** clarify the rule, then test |
+| Overcrowded room: +3 stress, −2 energy | Density may increase arousal; university class size matters | Effect magnitudes (students enter, decision #24) | **High:** test the sizes |
 | Back-to-back: +0.5 stress, −2 energy/class | Break studies support opportunities to recover/attend | Fixed point penalties and chosen gap threshold | Medium: zero-gap event logging |
 | Energy-to-skip curve `0.03 + 0.97×(energy lost/100)²` | Early-class attendance contrast offers a calibration target | 3% rested skip probability; quadratic shape; stable across student groups | **High:** calculate probabilities and compare runs |
 

@@ -26,7 +26,7 @@ Most research supports **directions**, not point-valued simulator effects. An as
 | 5 | Teaching day (start/end) | 08:00–18:00 | Early class schedules associated with shorter sleep and reduced attendance [R05] | Ten-hour campus window is a schedule assumption |
 | 6 | Class length | 120/60 min | Classroom movement breaks may improve alertness [R11] | Evidence does not prove a fixed loss per class hour |
 | 7 | Gap between slots | 10 min | Breaks support alertness; movement requires walking time [R11, R12] | Zero-gap tests previously found no late arrivals |
-| 8 | Room capacity | 1.0× | Large university classes can be associated with lower results [R08]; crowd density raises arousal [R09] | Overfull-room outcome differs between project documents |
+| 8 | Room capacity | 1.0× | Large university classes can be associated with lower results [R08]; crowd density raises arousal [R09] | Overfull rooms: students get in with a stress hit (decision #24) |
 | 9 | Food outlets (open) | 4 | Food access matters, but campus-food studies do not fix stop effects [R13, R06] | System not built; count and energy gain are assumptions |
 | 10 | Assessments per unit | 3 | Academic assessment pressure contributes to stress [R07] | Three is a balanced experimental baseline, not a literature rule |
 | 11 | Deadline clustering | 0.5 | Workload timing matters; stress is not only final total [R07] | Current model shows equal final stress at 0 and 1 |
@@ -97,7 +97,7 @@ Most research supports **directions**, not point-valued simulator effects. An as
 
 - **Current specification:** 0.5–1.5×, default **1.0×**, implemented.
 - **Evidence:** University class-size research supports possible academic consequences of large groups [R08]. Research on human crowd density supports a relationship with arousal, but does not directly quantify classroom stress [R09].
-- **Simulation link:** enrolment relative to capacity → **overcrowded-room events** → **stress ↑ (large), energy ↓ (slight)** under the revised `STUDENT_MODEL.md` proposal. `PARAMETERS.md` still says some students are "turned away"; **resolve this inconsistency in a team decision rather than inventing both rules**.
+- **Simulation link:** enrolment relative to capacity → **overcrowded-room events** → **stress ↑ (large), energy ↓ (slight)** under the revised `STUDENT_MODEL.md` proposal. The team confirmed this rule on 2026-10-09 (decision #24).
 - **Default assessment:** **1.0× is a neutral multiplier**, not a survey-based value.
 - **Check:** 0.5× / 1.0× / 1.5×, and document actual code behaviour for overfull rooms and number of overcrowding events.
 
@@ -193,5 +193,5 @@ The first several sources below are also listed in the team's existing `STUDENT_
 - [ ] Confirm the parameter list and parked/Good-to-have tiers have **not** been altered.
 - [ ] Review the **qualifications**: academic evidence generally supports direction, not precise simulator point sizes.
 - [ ] Record any accepted model/number changes separately in `DECISIONS.md` and, if approved, in code.
-- [ ] Resolve the overfull-room contradiction explicitly.
+- [x] Resolve the overfull-room contradiction explicitly (decision #24).
 - [ ] Run and record the experiments described in `RESEARCH_VALIDATION.md`.

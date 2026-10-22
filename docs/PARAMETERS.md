@@ -32,7 +32,7 @@ flowchart LR
 | 6 | ✓ Class length (lecture and tutorial) | 30–180 min | 120 / 60 | `lecture_minutes`, `tutorial_minutes` | Longer sessions drain more energy |
 | 7 | ✓ Gap between slots | 0–30 min | 10 | `slot_gap_minutes` | Changeover time to walk between classes. Too short and students arrive late |
 | | **Campus** | | | | |
-| 8 | ✓ Room capacity | 0.5–1.5 × | 1.0 | `room_capacity_multiplier` | Overfull rooms turn students away |
+| 8 | ✓ Room capacity | 0.5–1.5 × | 1.0 | `room_capacity_multiplier` | Overfull rooms: students still get in, but take a large stress hit and a slight energy hit (decision #24) |
 | 9 | Food outlets (open) | 1–10 | 4 | | Stops students visit in their free time (knapsack and TSP). A stop raises energy and lowers stress, the same at every outlet. Fewer outlets means longer queues, which use up free time. Sets how many of the outlets in the map data are open |
 | | **Semester** | | | | |
 | 10 | ✓ Assessments per unit | 1–6 | 3 | `assessments_per_unit` | How many deadlines students face |
@@ -138,7 +138,7 @@ Owners and order are in `ROADMAP.md`.
 
 ### Open review questions (no changes made)
 
-1. **Room capacity:** the Must-have table above says overfull rooms "turn students away", while the revised `STUDENT_MODEL.md` proposes letting them in with a stress and energy cost. A team decision is needed; do not silently implement both.
+1. **Room capacity:** settled on 2026-10-09 (decision #24). Students still get into an overfull room and take the overcrowding stress and energy hit. The table above and the code both follow this.
 2. **Zero-gap effect:** the team's first check runs showed no late arrivals even with a zero-minute gap. Verify route distances and the back-to-back-class determinant before defending the 10-minute default as improving punctuality.
 3. **Deadline clustering:** it changes when pressure is felt, but previous runs showed the same end-of-semester stress at clustering 0 and 1. Compare weekly peaks and test after food/breaks exist.
 4. **Assumption-sized numbers:** for each active effect in `StateEffects.EFFECTS`, keep published real-world findings separate from internal 0–100 points. The effect sizes should be reviewed with the sensitivity runs, not silently adjusted from literature correlations.

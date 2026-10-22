@@ -21,7 +21,7 @@ Test the **15 documented parameters** and the assumed state-effect values withou
 2. **Grades:** only class/study hours, assessment marks and unit averages. No direct marks penalty for late/skip/stress.
 3. **States:** grades, stress and energy do not directly feed into each other. **Energy** affects skip behaviour; **stress does not** in v1.
 4. Early start, commute, travel, class, study and recovery effects in the project are **model anchors**. Quantities from a research paper are not simulator state points.
-5. The current source docs disagree about whether an overfull room turns students away or simply applies overcrowding stress; log actual behaviour and seek a team decision.
+5. An overfull room lets students in and applies overcrowding stress (decision #24, 2026-10-09); log actual behaviour to check the code matches.
 
 ## Experiment matrix (proposed; not results)
 
@@ -108,7 +108,7 @@ Copy and fill in **one row for each completed run**. `TBD` is not an observed me
 
 - **Deadline clustering:** final mean/final stress can hide variation in weekly peaks; earlier source shows 99.1 for both extremes.
 - **Zero-gap lateness:** if no lateness occurs, inspect map paths, timetable allocations and walking thresholds before asserting lateness effects.
-- **Overfull-room behaviour:** `PARAMETERS.md` and `STUDENT_MODEL.md` disagree on turn-away versus crowded entry. Record what the *code* does, file an issue and request a team decision.
+- **Overfull-room behaviour:** settled by decision #24 (students get in with a stress hit). Record what the *code* does and file an issue if it differs.
 - **Missing features:** food visits, semester breaks and all Good-to-have systems may be absent on this branch. Label blocked tests and do not substitute invented results.
 - **0–100 saturation:** record clipping counts. If a change produces the same end-of-semester mean, that might be a ceiling effect, not no causal impact in the model.
 
