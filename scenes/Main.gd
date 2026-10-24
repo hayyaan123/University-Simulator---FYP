@@ -19,9 +19,12 @@ var _students: Array[Student] = []
 var _clock_label: Label
 var _stats_label: Label
 var _play_button: Button
+var _view_button: Button
+var _showing_3d: bool = false
 
 @onready var _runner: SimRunner = $SimRunner
 @onready var _map: MapView = $MapView
+@onready var _map3d: MapView3D = $MapView3D
 
 
 func _ready() -> void:
@@ -33,6 +36,16 @@ func _ready() -> void:
 	_runner.playing_changed.connect(func(playing: bool) -> void: _play_button.text = "Pause" if playing else "Play")
 	Params.set_value(&"sim_minutes_per_second", SPEEDS[START_SPEED_INDEX])
 	_start_run()
+	show_3d(false)
+
+
+## Switches between the 2D map and the 3D map. Both always show the same run.
+func show_3d(on: bool) -> void:
+	_showing_3d = on
+	_map.visible = not on
+	_map.process_mode = Node.PROCESS_MODE_DISABLED if on else Node.PROCESS_MODE_INHERIT
+	_map3d.set_active(on)
+	_view_button.text = "2D view" if on else "3D view"
 
 
 func _process(_delta: float) -> void:
@@ -50,6 +63,7 @@ func _start_run() -> void:
 	var sessions: Array[ClassSession] = result["sessions"]
 	_students = result["students"]
 	_map.setup(_campus, _students)
+	_map3d.setup(_campus, _students)
 	var assessments: Array[Assessment] = AssessmentPlanner.plan(AssessmentPlanner.unit_codes_of(_units))
 	_runner.start_run(_campus, sessions, _students, RuleDecision.new(), assessments)
 	_runner.engine.advance_to(SimTime.at(0, Params.day_start_hour) - LEAD_IN_MINUTES)
@@ -109,6 +123,7 @@ func _build_hud() -> void:
 	_play_button = _add_button(controls, "Play", _runner.toggle)
 	_add_button(controls, "+1 hour", func() -> void: _runner.step(60.0))
 	_add_button(controls, "New run", _on_new_run)
+	_view_button = _add_button(controls, "3D view", func() -> void: show_3d(not _showing_3d))
 
 	var speeds: HBoxContainer = HBoxContainer.new()
 	box.add_child(speeds)
@@ -118,7 +133,7 @@ func _build_hud() -> void:
 	_stats_label = Label.new()
 	box.add_child(_stats_label)
 	var legend: Label = Label.new()
-	legend.text = "Dots: blue walking, green in class, orange waiting"
+	legend.text = "Dots: blue walking, green in class, orange waiting. In 3D: WASD/drag to move, Q/E or middle-drag to turn, wheel to zoom, click a building for details, G for low/high graphics"
 	legend.autowrap_mode = TextServer.AUTOWRAP_WORD
 	box.add_child(legend)
 

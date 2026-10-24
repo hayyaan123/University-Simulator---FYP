@@ -1,0 +1,91 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/map3d/MapView3D.gd" id="1_view"]
+[ext_resource type="Script" path="res://scenes/map3d/CampusWorld.gd" id="2_world"]
+[ext_resource type="Script" path="res://scenes/map3d/CampusCamera.gd" id="3_camera"]
+[ext_resource type="Script" path="res://scenes/map3d/DayNight.gd" id="4_daynight"]
+[ext_resource type="Script" path="res://scenes/map3d/Students3D.gd" id="5_students"]
+[ext_resource type="Script" path="res://scenes/map3d/BuildingInfo.gd" id="6_info"]
+[ext_resource type="Script" path="res://scenes/map3d/InteriorView.gd" id="7_interior"]
+
+[sub_resource type="ProceduralSkyMaterial" id="sky_material"]
+sky_top_color = Color(0.31, 0.56, 0.84, 1)
+sky_horizon_color = Color(0.77, 0.86, 0.91, 1)
+ground_bottom_color = Color(0.38, 0.43, 0.45, 1)
+ground_horizon_color = Color(0.77, 0.86, 0.91, 1)
+sun_angle_max = 20.0
+
+[sub_resource type="Sky" id="sky"]
+sky_material = SubResource("sky_material")
+
+[sub_resource type="Environment" id="environment"]
+background_mode = 2
+sky = SubResource("sky")
+ambient_light_source = 3
+ambient_light_color = Color(0.78, 0.82, 0.86, 1)
+ambient_light_sky_contribution = 0.45
+tonemap_mode = 2
+tonemap_white = 6.0
+glow_enabled = true
+glow_intensity = 0.55
+glow_bloom = 0.04
+glow_hdr_threshold = 1.1
+fog_enabled = true
+fog_light_color = Color(0.74, 0.82, 0.88, 1)
+fog_density = 0.00035
+fog_aerial_perspective = 0.12
+adjustment_enabled = true
+adjustment_contrast = 1.06
+adjustment_saturation = 1.12
+
+[node name="MapView3D" type="Node3D"]
+script = ExtResource("1_view")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("environment")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.7, -0.5, 0.5, 0, 0.707, 0.707, -0.707, -0.5, 0.5, 0, 50, 0)
+light_color = Color(1, 0.95, 0.86, 1)
+light_energy = 1.35
+shadow_enabled = true
+shadow_bias = 0.05
+shadow_blur = 1.5
+directional_shadow_mode = 1
+directional_shadow_max_distance = 420.0
+
+[node name="CampusWorld" type="Node3D" parent="."]
+script = ExtResource("2_world")
+
+[node name="CameraRig" type="Node3D" parent="."]
+script = ExtResource("3_camera")
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig"]
+fov = 38.0
+near = 0.5
+far = 4000.0
+
+[node name="DayNight" type="Node" parent="." node_paths=PackedStringArray("sun", "environment", "world")]
+script = ExtResource("4_daynight")
+sun = NodePath("../Sun")
+environment = NodePath("../WorldEnvironment")
+world = NodePath("../CampusWorld")
+
+[node name="Students3D" type="MultiMeshInstance3D" parent="."]
+script = ExtResource("5_students")
+
+[node name="InteriorView" type="Node3D" parent="."]
+script = ExtResource("7_interior")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="BuildingInfo" type="PanelContainer" parent="UI"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -296.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = 120.0
+grow_horizontal = 0
+script = ExtResource("6_info")

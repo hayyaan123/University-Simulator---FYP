@@ -1,0 +1,89 @@
+{
+	"about": "Hand-edited looks for the 3D map. Footprints and floor counts come from campus.json and campus_ground.json; this file fills the gaps. See docs/MAP_3D.md for sources and assumptions.",
+	"styles": {
+		"teaching": {
+			"wall_color": "#dccdb1", "band_color": "#c3b398", "glass_color": "#7fa596",
+			"frame_color": "#5d6461", "base_color": "#4a4c50",
+			"floor_height": 3.8, "bay_width": 3.2, "sill": 0.3, "head": 0.8,
+			"pier_every": 3, "base_height": 4.4, "lit_fraction": 0.6
+		},
+		"library": {
+			"wall_color": "#e4dccb", "band_color": "#cdbfa6", "glass_color": "#6f9e9a",
+			"frame_color": "#59615f", "base_color": "#4a4c50",
+			"floor_height": 4.2, "bay_width": 2.4, "sill": 0.14, "head": 0.9,
+			"pier_every": 5, "base_height": 4.4, "lit_fraction": 0.85
+		},
+		"link": {
+			"wall_color": "#d9d2c4", "band_color": "#b9ae9b", "glass_color": "#5f8f93",
+			"frame_color": "#6b7372", "base_color": "#5a5c60",
+			"floor_height": 4.0, "bay_width": 2.0, "sill": 0.12, "head": 0.9,
+			"pier_every": 6, "base_height": 0.0, "lit_fraction": 0.9
+		},
+		"sports": {
+			"wall_color": "#e6e1d6", "band_color": "#c9c1b2", "glass_color": "#7aa0a8",
+			"frame_color": "#5d6461", "base_color": "#52545a",
+			"floor_height": 5.0, "bay_width": 4.0, "sill": 0.55, "head": 0.85,
+			"pier_every": 2, "base_height": 3.6, "lit_fraction": 0.7
+		},
+		"residence": {
+			"wall_color": "#e9e2d4", "band_color": "#d3c3a6", "glass_color": "#86a6a8",
+			"frame_color": "#6e6a62", "base_color": "#6a6660",
+			"floor_height": 3.1, "bay_width": 2.6, "sill": 0.35, "head": 0.8,
+			"pier_every": 4, "base_height": 3.4, "lit_fraction": 0.5
+		},
+		"station": {
+			"wall_color": "#d5d9dc", "band_color": "#2f6db3", "glass_color": "#7fb0c6",
+			"frame_color": "#3a4d63", "base_color": "#2f6db3",
+			"floor_height": 5.5, "bay_width": 2.5, "sill": 0.1, "head": 0.85,
+			"pier_every": 8, "base_height": 0.0, "lit_fraction": 1.0
+		},
+		"scenery": {
+			"wall_color": "#d8d2c6", "band_color": "#bdb5a6", "glass_color": "#8197a0",
+			"frame_color": "#6b6b67", "base_color": "#77736c",
+			"floor_height": 3.4, "bay_width": 3.0, "sill": 0.35, "head": 0.75,
+			"pier_every": 3, "base_height": 3.4, "lit_fraction": 0.35
+		},
+		"retail": {
+			"wall_color": "#e8d9bd", "band_color": "#c99a6b", "glass_color": "#7d939b",
+			"frame_color": "#6b5d4f", "base_color": "#9a6f52",
+			"floor_height": 3.4, "bay_width": 4.5, "sill": 0.35, "head": 0.78,
+			"pier_every": 1000, "base_height": 3.6, "lit_fraction": 0.5
+		},
+		"industrial": {
+			"wall_color": "#b9c0c4", "band_color": "#9aa3a8", "glass_color": "#7d8c94",
+			"frame_color": "#5c6468", "base_color": "#8b9296",
+			"floor_height": 5.0, "bay_width": 6.0, "sill": 0.7, "head": 0.85,
+			"pier_every": 2, "base_height": 0.0, "lit_fraction": 0.2
+		}
+	},
+	"kind_styles": {
+		"teaching": "teaching", "library": "library", "link": "link", "sports": "sports",
+		"transport": "station", "residence": "residence"
+	},
+	"scenery_styles": {
+		"retail": "retail", "industrial": "industrial", "dormitory": "residence", "school": "scenery"
+	},
+	"scenery_default_levels": {
+		"retail": 2, "industrial": 2, "dormitory": 14, "school": 3, "yes": 3
+	},
+	"buildings": {
+		"B2": {},
+		"B3": {"levels": 6, "glass_towers": [[1110.0, 240.0], [1150.0, 425.0]]},
+		"B4": {"levels": 6},
+		"B5": {"levels": 6},
+		"B5A": {},
+		"B6": {"interior": "canteen"},
+		"B6B": {},
+		"B9": {"open_ground_floor": "through"},
+		"B7": {"levels": 3, "interior": "library"},
+		"LINK": {"base_m": 9.0},
+		"SPORTS": {"levels": 2, "roof": "green"},
+		"SB5": {"base_m": 9.0, "levels": 1, "roof": "canopy"},
+		"RES": {"levels": 16},
+		"CARPARK": {"flat": "parking"}
+	},
+	"landmarks": [
+		{"id": "front_gate", "scene": "res://scenes/map3d/landmarks/FrontGate.tscn", "position_px": [1079.0, 222.0], "facing_deg": 0.0, "clear_radius_m": 20.0},
+		{"id": "canteen", "scene": "res://scenes/map3d/landmarks/Canteen.tscn", "position_px": [983.0, 520.0], "facing_deg": 90.0, "clear_radius_m": 13.0}
+	]
+}
