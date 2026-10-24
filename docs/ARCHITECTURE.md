@@ -50,11 +50,13 @@ decisions/         DecisionModel (base), DecisionContext, RuleDecision
                    planned: MLDecision (Semester 2)
 ml/                planned, Semester 2: model loaders and JSON model files
 scenes/            Main, MapView; planned: ParamPanel, Dashboard, SemesterReport
+  map3d/           MapView3D (the 3D map) and its builders, shaders, landmarks
 ui/                planned: chart widgets and panels shared between scenes
-data/              campus.json, units.json, scenarios/, osm/
+data/              campus.json, campus_ground.json, campus_3d.json, units.json, scenarios/, osm/
+assets/third_party/  CC0 models used by the 3D map (credits in CREDITS.md)
 tests/unit/        one test_<thing>.gd per class
 tests/helpers/     fakes shared between tests
-tools/             Python scripts (not part of the Godot build)
+tools/             Python scripts (not part of the Godot build), Screenshot3D (renders 3D map views)
 docs/              these documents
 ```
 
@@ -138,7 +140,25 @@ Pathing, scheduling and walking distance are coded by us, so we don't use Godot'
 
 Walking between classes on its own is **not** a travelling salesman problem, because the timetable already fixes the order. The TSP appears when the student chooses the order, which is the errands case.
 
-**3D later:** the campus is stored as a graph (points joined by walking distances). Floors, stairs and lifts become extra points and links, so the algorithms above don't change.
+**3D:** the 3D map (below) only draws the same graph in 3D; walkers follow `Campus.path_points()` exactly as on the 2D map. Floors, stairs and lifts can later become extra points and links, so the algorithms above don't change.
+
+## The 3D map
+
+`scenes/map3d/MapView3D.tscn` is a second view of the same run, switched on with the "3D view" button in Main. Like MapView it only listens to `EventBus` and reads `Campus`; it never changes the simulation. It also runs on its own (open the scene, press F6), and the campus shows in Godot's 3D editor because `CampusWorld` is a tool script.
+
+| Part | File | What it does |
+| --- | --- | --- |
+| World | `CampusWorld.gd` | Builds everything from `campus.json`, `campus_ground.json` and `campus_3d.json` |
+| Ground | `GroundBuilder.gd` | Grass, areas, water, roads with markings, raised roads on pillars, covered walkways |
+| Buildings | `BuildingBuilder.gd` | Extrudes footprints with the facade shader; parapets, roof plant, open ground floors, glass towers; one pick body per campus building |
+| Props | `PropScatter.gd`, `ModelLibrary.gd`, `OccupancyGrid.gd` | Trees, hedges, parked cars and lamps (Kenney CC0 models), one MultiMesh per model |
+| Landmarks | `landmarks/FrontGate`, `landmarks/Canteen` | Hand-built scenes placed by `campus_3d.json` |
+| Students | `Students3D.gd` | One MultiMesh; walkers follow `Campus.path_points()`; students indoors are counted for the labels |
+| Interiors | `InteriorView.gd`, `InteriorBuilder.gd` | "Look inside": the floors above are cut away (`shaders/cutaway.gdshaderinc`) and one floor is furnished from the building's rooms; students in class sit in their room |
+| Light | `DayNight.gd`, `MaterialBank.gd` | Sun, sky and fog follow sim time; windows and lamps light up at night |
+| Camera, UI | `CampusCamera.gd`, `BuildingInfo.gd` | Management camera; click a building for its rooms and occupancy |
+
+Geometry: one 3D unit is one metre; 2D x maps to 3D x and 2D y to 3D z (`MapFrame.gd`), so the two maps line up. The project stays on the Compatibility renderer, so the look comes from shaders (window patterns, fake ambient occlusion, fog) rather than screen-space effects. References and assumptions for the look are in [MAP_3D.md](MAP_3D.md).
 
 ## Decision models
 
@@ -198,7 +218,8 @@ First versions of the campus, timetable and map were built together so the whole
 | Campus data | `data/campus.json`, `tools/build_campus_from_osm.py` | First version (Shuyu to take over) | Monash University Malaysia from OpenStreetMap; rooms are placeholders; no food outlets yet |
 | Timetable generator | `sim/timetable/TimetableGenerator.gd` | First version (Hayyaan to take over) | `generate(campus, units, rng) -> {"sessions", "students"}` using Params. No room double-booking; no student clashes; classes start on the hour and end `slot_gap_minutes` early; repeat lecture streams for clashing students |
 | Map view | `scenes/MapView.gd` | First version (Siw to take over) | Listens to EventBus; draws buildings, paths and students (one MultiMesh); walkers follow `Campus.path_points()` |
-| Main scene + temporary HUD | `scenes/Main.gd` | Temporary | Builds a run; the HUD is replaced by ParamPanel and Dashboard |
+| Main scene + temporary HUD | `scenes/Main.gd` | Temporary | Builds a run; the HUD is replaced by ParamPanel and Dashboard. "3D view" switches to MapView3D |
+| 3D map | `scenes/map3d/MapView3D.gd` | First version (Peshaant) | Listens to EventBus only; same `setup(campus, students)` as MapView. See "The 3D map" above |
 | Student states | `sim/students/Student.gd`, `sim/students/StateEffects.gd` | Built | See STUDENT_MODEL.md. `StateEffects` is the only place that changes stress and energy; every size has a source or a stated assumption |
 | Rule decisions | `decisions/RuleDecision.gd` | Built | Extends DecisionModel. `skip_chance(student)` from energy |
 | Calendar | `sim/core/Calendar.gd` | To build | Mid-semester break, exam period, break between semesters, semester after semester. The engine already repeats the weekly timetable for one semester |
