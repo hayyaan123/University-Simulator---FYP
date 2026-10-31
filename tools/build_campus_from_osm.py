@@ -2,6 +2,11 @@
 
 Usage:
     python tools/build_campus_from_osm.py data/osm/monash_malaysia.osm data/campus.json
+    python tools/build_campus_from_osm.py data/osm/monash_malaysia.osm data/campus.json --ground data/campus_ground.json
+
+With --ground it also writes the ground layer for the 3D map (roads with widths, water,
+pitches, woods, car parks and every non-campus building with its floor count), in the
+same pixel frame as campus.json so both line up.
 
 The extract was downloaded from the OpenStreetMap API (bbox 101.5980,3.0615,101.6030,3.0665).
 Map data (c) OpenStreetMap contributors, available under the Open Database Licence (ODbL).
@@ -162,7 +167,36 @@ def reachable(graph: Graph, start: str) -> set[str]:
     return seen
 
 
+@dataclass
+class Frame:
+    """Turns metres (east, north) into map pixels (x right, y down), as in campus.json."""
+    min_x: float
+    min_y: float
+    max_x: float
+    max_y: float
+    scale: float
+    off_x: float
+    off_y: float
+
+    @staticmethod
+    def fit(roi: tuple[float, float, float, float]) -> "Frame":
+        min_x, min_y, max_x, max_y = roi
+        left, top, right, bottom = VIEW_RECT
+        scale = min((right - left) / (max_x - min_x), (bottom - top) / (max_y - min_y))
+        off_x = left + ((right - left) - (max_x - min_x) * scale) / 2
+        off_y = top + ((bottom - top) - (max_y - min_y) * scale) / 2
+        return Frame(min_x, min_y, max_x, max_y, scale, off_x, off_y)
+
+    def px(self, p: tuple[float, float]) -> list[float]:
+        return [round(self.off_x + (p[0] - self.min_x) * self.scale, 1),
+                round(self.off_y + (self.max_y - p[1]) * self.scale, 1)]
+
+
 def build(osm_path: str) -> dict:
+    return build_with_frame(osm_path)[0]
+
+
+def build_with_frame(osm_path: str) -> tuple[dict, Frame]:
     nodes, ways = load_osm(osm_path)
     outlines: dict[str, list[tuple[float, float]]] = {}
     levels: dict[str, int] = {}
@@ -223,7 +257,8 @@ def build(osm_path: str) -> dict:
     graph.adj = {k: {n: e for n, e in v.items() if n in keep} for k, v in graph.adj.items() if k in keep}
 
     simplify(graph, set(ids))
-    return to_json(graph, outlines, levels, scenery, (min_x, min_y, max_x, max_y))
+    frame = Frame.fit((min_x, min_y, max_x, max_y))
+    return to_json(graph, outlines, levels, scenery, frame), frame
 
 
 def simplify(graph: Graph, fixed: set[str]) -> None:
@@ -245,15 +280,10 @@ def simplify(graph: Graph, fixed: set[str]) -> None:
     graph.pos = {k: v for k, v in graph.pos.items() if k in graph.adj}
 
 
-def to_json(graph: Graph, outlines, levels, scenery, roi) -> dict:
-    min_x, min_y, max_x, max_y = roi
-    left, top, right, bottom = VIEW_RECT
-    scale = min((right - left) / (max_x - min_x), (bottom - top) / (max_y - min_y))
-    off_x = left + ((right - left) - (max_x - min_x) * scale) / 2
-    off_y = top + ((bottom - top) - (max_y - min_y) * scale) / 2
-
-    def px(p: tuple[float, float]) -> list[float]:
-        return [round(off_x + (p[0] - min_x) * scale, 1), round(off_y + (max_y - p[1]) * scale, 1)]
+def to_json(graph: Graph, outlines, levels, scenery, frame: Frame) -> dict:
+    min_x, min_y, max_x, max_y = frame.min_x, frame.min_y, frame.max_x, frame.max_y
+    scale = frame.scale
+    px = frame.px
 
     def in_view(poly) -> bool:
         return all(min_x <= p[0] <= max_x and min_y <= p[1] <= max_y for p in poly)
@@ -302,17 +332,218 @@ def to_json(graph: Graph, outlines, levels, scenery, roi) -> dict:
     }
 
 
+# ---------------------------------------------------------------------------
+# Ground layer for the 3D map
+# ---------------------------------------------------------------------------
+
+# Road width in metres when OSM has no lane count, and the width of one lane.
+ROAD_WIDTH_M: dict[str, float] = {
+    "motorway": 11.0, "motorway_link": 6.0, "trunk": 10.0, "primary": 10.0,
+    "secondary": 9.0, "secondary_link": 6.0, "tertiary": 8.0, "residential": 6.5,
+    "unclassified": 6.0, "service": 4.5, "living_street": 5.0, "pedestrian": 4.0,
+    "footway": 2.5, "path": 2.0, "cycleway": 2.2, "steps": 2.5, "bus_guideway": 8.0,
+}
+LANE_WIDTH_M = 3.3
+PARKING_AISLE_WIDTH_M = 6.0
+# Area kinds the 3D map draws, checked in this order.
+AREA_RULES: list[tuple[str, str, str | None]] = [
+    ("natural", "water", "water"),
+    ("leisure", "swimming_pool", "pool"),
+    ("leisure", "pitch", "pitch"),
+    ("natural", "wood", "wood"),
+    ("amenity", "parking", "parking"),
+    ("amenity", "university", "campus"),
+    ("amenity", "school", "school"),
+    ("landuse", "residential", "residential"),
+    ("landuse", "industrial", "industrial"),
+    ("landuse", "grass", "grass"),
+    ("leisure", "park", "grass"),
+]
+
+
+def clip_polyline(pts: list[tuple[float, float]], box: tuple[float, float, float, float]) -> list[list[tuple[float, float]]]:
+    """Cuts a polyline to a rectangle (Liang-Barsky per segment). Returns the pieces inside."""
+    x0, y0, x1, y1 = box
+    pieces: list[list[tuple[float, float]]] = []
+    current: list[tuple[float, float]] = []
+    for a, b in zip(pts, pts[1:]):
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        t0, t1, ok = 0.0, 1.0, True
+        for p, q in ((-dx, a[0] - x0), (dx, x1 - a[0]), (-dy, a[1] - y0), (dy, y1 - a[1])):
+            if p == 0:
+                if q < 0:
+                    ok = False
+                    break
+                continue
+            t = q / p
+            if p < 0:
+                t0 = max(t0, t)
+            else:
+                t1 = min(t1, t)
+            if t0 > t1:
+                ok = False
+                break
+        if not ok:
+            if len(current) >= 2:
+                pieces.append(current)
+            current = []
+            continue
+        ca = (a[0] + t0 * dx, a[1] + t0 * dy)
+        cb = (a[0] + t1 * dx, a[1] + t1 * dy)
+        if not current or dist(current[-1], ca) > 1e-6:
+            if len(current) >= 2:
+                pieces.append(current)
+            current = [ca]
+        current.append(cb)
+        if t1 < 1.0:
+            pieces.append(current)
+            current = []
+    if len(current) >= 2:
+        pieces.append(current)
+    return pieces
+
+
+def clip_polygon(poly: list[tuple[float, float]], box: tuple[float, float, float, float]) -> list[tuple[float, float]]:
+    """Cuts a polygon to a rectangle (Sutherland-Hodgman)."""
+    x0, y0, x1, y1 = box
+    edges = [
+        (lambda p: p[0] >= x0, lambda a, b: (x0, a[1] + (b[1] - a[1]) * (x0 - a[0]) / (b[0] - a[0]))),
+        (lambda p: p[0] <= x1, lambda a, b: (x1, a[1] + (b[1] - a[1]) * (x1 - a[0]) / (b[0] - a[0]))),
+        (lambda p: p[1] >= y0, lambda a, b: (a[0] + (b[0] - a[0]) * (y0 - a[1]) / (b[1] - a[1]), y0)),
+        (lambda p: p[1] <= y1, lambda a, b: (a[0] + (b[0] - a[0]) * (y1 - a[1]) / (b[1] - a[1]), y1)),
+    ]
+    out = poly
+    for inside_fn, cut in edges:
+        if not out:
+            break
+        src, out = out, []
+        for i, cur in enumerate(src):
+            prev = src[i - 1]
+            if inside_fn(cur):
+                if not inside_fn(prev):
+                    out.append(cut(prev, cur))
+                out.append(cur)
+            elif inside_fn(prev):
+                out.append(cut(prev, cur))
+    return out
+
+
+def road_width(tags: dict[str, str]) -> float:
+    if tags.get("width"):
+        try:
+            return float(tags["width"].split()[0])
+        except ValueError:
+            pass
+    if tags.get("service") == "parking_aisle":
+        return PARKING_AISLE_WIDTH_M
+    if tags.get("lanes", "").isdigit() and tags["highway"] not in ("footway", "path", "steps", "cycleway"):
+        return int(tags["lanes"]) * LANE_WIDTH_M
+    return ROAD_WIDTH_M.get(tags["highway"], 5.0)
+
+
+def int_tag(tags: dict[str, str], key: str, default: int) -> int:
+    try:
+        return int(float(tags.get(key, default)))
+    except ValueError:
+        return default
+
+
+def build_ground(osm_path: str, frame: Frame) -> dict:
+    """Roads, areas and non-campus buildings inside the OSM extract's bounds, in campus pixels."""
+    nodes, ways = load_osm(osm_path)
+    bounds = ET.parse(osm_path).getroot().find("bounds")
+    sw = to_metres(float(bounds.get("minlat")), float(bounds.get("minlon")))
+    ne = to_metres(float(bounds.get("maxlat")), float(bounds.get("maxlon")))
+    box = (sw[0], sw[1], ne[0], ne[1])
+    px = frame.px
+
+    roads, areas, buildings = [], [], []
+    for wid, tags, refs in ways:
+        pts = [nodes[r] for r in refs]
+        if len(pts) < 2:
+            continue
+        if "highway" in tags and tags["highway"] in ROAD_WIDTH_M and tags.get("area") != "yes":
+            for piece in clip_polyline(pts, box):
+                road = {"kind": tags["highway"], "width_m": round(road_width(tags), 1)}
+                layer = int_tag(tags, "layer", 0)
+                if layer:
+                    road["layer"] = layer
+                if tags.get("bridge") == "yes":
+                    road["bridge"] = True
+                if tags.get("covered") == "yes":
+                    road["covered"] = True
+                if tags.get("service"):
+                    road["service"] = tags["service"]
+                road["points"] = [px(p) for p in piece]
+                roads.append(road)
+            continue
+        closed = pts[0] == pts[-1]
+        if not closed or len(pts) < 4:
+            continue
+        poly = clip_polygon(pts[:-1], box)
+        if len(poly) < 3:
+            continue
+        if "building" in tags:
+            if wid in BUILDINGS:
+                continue  # campus buildings are in campus.json
+            building = {"kind": tags["building"], "levels": int_tag(tags, "building:levels", 0)}
+            layer = int_tag(tags, "layer", 0)
+            if layer:
+                building["layer"] = layer
+            if tags.get("name"):
+                building["name"] = tags["name"]
+            building["outline"] = [px(p) for p in poly]
+            buildings.append(building)
+            continue
+        for key, value, kind in AREA_RULES:
+            if tags.get(key) == value:
+                area = {"kind": kind}
+                if tags.get("sport"):
+                    area["sport"] = tags["sport"]
+                if tags.get("name") and kind in ("pitch", "parking", "water"):
+                    area["name"] = tags["name"]
+                area["outline"] = [px(p) for p in poly]
+                areas.append(area)
+                break
+
+    # Big areas first, so smaller ones (pitches inside the campus) draw on top.
+    def area_size(a: dict) -> float:
+        xs = [p[0] for p in a["outline"]]
+        ys = [p[1] for p in a["outline"]]
+        return (max(xs) - min(xs)) * (max(ys) - min(ys))
+    areas.sort(key=area_size, reverse=True)
+    corner_a, corner_b = px((box[0], box[3])), px((box[2], box[1]))
+    return {
+        "source": "Map data (c) OpenStreetMap contributors, ODbL. Built by tools/build_campus_from_osm.py.",
+        "metres_per_pixel": round(1.0 / frame.scale, 4),
+        "bounds": corner_a + corner_b,
+        "roads": roads,
+        "areas": areas,
+        "buildings": buildings,
+    }
+
+
+def write_json(data: dict, path: str) -> None:
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(data, f, indent="\t")
+        f.write("\n")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("osm", help="OpenStreetMap XML extract")
     parser.add_argument("out", help="campus.json to write")
+    parser.add_argument("--ground", help="also write the 3D ground layer (campus_ground.json) here")
     args = parser.parse_args()
-    data = build(args.osm)
-    with open(args.out, "w", encoding="utf-8", newline="\n") as f:
-        json.dump(data, f, indent="\t")
-        f.write("\n")
+    data, frame = build_with_frame(args.osm)
+    write_json(data, args.out)
     print(f"{len(data['buildings'])} buildings, {len(data['waypoints'])} waypoints, "
           f"{len(data['paths'])} paths, {len(data['rooms'])} rooms -> {args.out}")
+    if args.ground:
+        ground = build_ground(args.osm, frame)
+        write_json(ground, args.ground)
+        print(f"{len(ground['roads'])} roads, {len(ground['areas'])} areas, "
+              f"{len(ground['buildings'])} buildings -> {args.ground}")
 
 
 if __name__ == "__main__":

@@ -46,6 +46,44 @@ All data files are JSON with tab indentation and live in `data/`. Ids are string
 | `paths` | Undirected links between buildings or waypoints. `distance_m` is the walking distance in metres along the path, not the straight line. `indoor: true` marks a link through connected buildings. `points` are the bends between the two ends, in pixels, for drawing. Every building must be reachable from the entrance. |
 | `scenery` | Outlines of other buildings in the area. Drawn only. |
 
+## campus_ground.json
+
+The ground layer for the 3D map, generated with campus.json by `tools/build_campus_from_osm.py ... --ground data/campus_ground.json`. Same pixel frame and `metres_per_pixel` as campus.json, so the two line up. Don't edit it by hand.
+
+```json
+{
+	"metres_per_pixel": 0.4994,
+	"bounds": [417.8, -104.0, 1530.7, 1003.0],
+	"roads": [
+		{ "kind": "secondary", "width_m": 6.6, "points": [[639.0, 145.6], [981.4, 148.7]] },
+		{ "kind": "bus_guideway", "width_m": 8.0, "layer": 2, "bridge": true, "points": [...] },
+		{ "kind": "footway", "width_m": 2.5, "covered": true, "points": [...] }
+	],
+	"areas": [ { "kind": "pitch", "sport": "soccer", "name": "MPC1", "outline": [[...]] } ],
+	"buildings": [ { "kind": "retail", "levels": 2, "outline": [[...]] } ]
+}
+```
+
+| Field | Rules |
+| --- | --- |
+| `bounds` | The OSM extract's bounding box in pixels: left, top, right, bottom. Pixels may be outside the 1600 × 900 view |
+| `roads[].kind` | The OSM `highway` value. `width_m` comes from `width`, then `lanes` × 3.3 m, then a default per kind |
+| `roads[].layer`, `bridge`, `covered` | From OSM. Bridges are raised 5 m per layer in 3D; covered paths get a roof |
+| `areas[].kind` | `water`, `pool`, `pitch`, `wood`, `parking`, `campus`, `school`, `residential`, `industrial` or `grass`. Big areas come first |
+| `buildings` | Every building in the extract that is not a campus building. `levels` is 0 when OSM has none |
+
+## campus_3d.json
+
+Hand-edited looks for the 3D map: what OpenStreetMap doesn't know. Sources and assumptions are in `docs/MAP_3D.md`.
+
+| Key | Meaning |
+| --- | --- |
+| `styles` | Named facade styles: colours (`"#rrggbb"`), `floor_height`, `bay_width`, window `sill`/`head` (fractions of a floor), `pier_every`, `base_height`, `lit_fraction` |
+| `kind_styles`, `scenery_styles` | Which style each campus building kind / OSM building kind uses |
+| `scenery_default_levels` | Floors for scenery buildings when OSM has none |
+| `buildings.<id>` | Per campus building: `levels`, `base_m` (raised on columns), `roof` (`flat`, `green`, `canopy`), `glass_towers` (pixel positions), `open_ground_floor` (`"through"` = open passage on columns; `true`, a side such as `"north"` or a list = covered walkway on those sides), `interior` (`rooms`, `canteen`, `library`), `flat` (`parking`: not extruded) |
+| `landmarks` | `{id, scene, position_px, facing_deg, clear_radius_m}`: a scene placed on the map; props keep `clear_radius_m` away |
+
 ## units.json
 
 ```json

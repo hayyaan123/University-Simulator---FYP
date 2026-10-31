@@ -32,7 +32,7 @@ The tiers follow the first-meeting whiteboard and the supervisor's feedback on 2
 | Good | Data logging to CSV (matches OULAD/UCI columns) | 2 | |
 | Good | Save/load scenarios and compare two runs | 2 | |
 | Good | Path crowding that slows walking (fixed formula) | 2 | |
-| Good | 3D buildings and rooms, only after everything above works | 2 | |
+| Good | 3D buildings and rooms, only after everything above works | 2 | First version built early (`scenes/map3d/`, branch `feature/peshaant-3d-map`): whole campus, gate, canteen, students, day/night, interiors |
 | Nice | Python sidecar for larger models | 2 | |
 | Nice | Collision detection, crowd heatmap | 2 | |
 | Nice | Graphics polish and music | 2 | |
