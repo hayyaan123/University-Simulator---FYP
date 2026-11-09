@@ -6,12 +6,12 @@ extends RefCounted
 ## Sources and reasoning are in docs/PARAMETERS.md and docs/STUDENT_MODEL.md. A
 ## value with no source named here is still a placeholder (Arya).
 
-## Average walking speed, about 1.3 m/s.
-const WALKING_SPEED_M_PER_MIN: float = 80.0
+## Average walking speed, about 1.3 m/s. Lowered to account for stairs, crowds, and packing up.
+const WALKING_SPEED_M_PER_MIN: float = 60.0
 ## Students aim to arrive this many minutes before a class starts.
 const LEAVE_EARLY_MINUTES: float = 5.0
-## An arrival counts as late after this many minutes.
-const LATE_AFTER_MINUTES: float = 5.0
+## An arrival counts as late after this many minutes. Reduced to trigger lateness accurately.
+const LATE_AFTER_MINUTES: float = 2.0
 ## A student this late cannot enter, and the class counts as missed.
 const TOO_LATE_MINUTES: float = 20.0
 ## A first class before this hour counts as an early start.

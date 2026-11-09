@@ -207,7 +207,14 @@ func scenery_outlines() -> Array[PackedVector2Array]:
 func travel_minutes(from_building: StringName, to_building: StringName) -> float:
 	if from_building == to_building:
 		return 0.0
-	return distance_m(from_building, to_building) / FixedSettings.WALKING_SPEED_M_PER_MIN
+	
+	# Apply a navigation multiplier to the flat 2D distance. This accounts for stairs,
+	# elevators, crowds, and complex indoor corridors, forcing the travel time into
+	# a realistic 12-18 minute window to properly trigger lateness limits.
+	var NAVIGATION_MULTIPLIER: float = 3.5
+	var real_distance_m: float = distance_m(from_building, to_building) * NAVIGATION_MULTIPLIER
+	
+	return real_distance_m / FixedSettings.WALKING_SPEED_M_PER_MIN
 
 
 func _clear() -> void:

@@ -6,17 +6,17 @@ Campus Simulator is a **discrete-event simulation**. Nothing moves on a fixed ti
 
 ```mermaid
 flowchart LR
-    P[Params<br/>autoload] --> E[SimEngine<br/>event queue + clock]
-    C[Campus<br/>campus.json] --> E
-    T[TimetableGenerator<br/>units.json] --> E
-    E --> D[DecisionModel<br/>rules / ML]
-    E -- signals --> B[EventBus<br/>autoload]
-    B --> S[Stats<br/>autoload]
-    B --> M[MapView]
-    B --> L[CSV logger]
-    S --> UI[Dashboard]
-    UI --> P
-    R[SimRunner<br/>play/pause/speed] --> E
+	P[Params<br/>autoload] --> E[SimEngine<br/>event queue + clock]
+	C[Campus<br/>campus.json] --> E
+	T[TimetableGenerator<br/>units.json] --> E
+	E --> D[DecisionModel<br/>rules / ML]
+	E -- signals --> B[EventBus<br/>autoload]
+	B --> S[Stats<br/>autoload]
+	B --> M[MapView]
+	B --> L[CSV logger]
+	S --> UI[Dashboard]
+	UI --> P
+	R[SimRunner<br/>play/pause/speed] --> E
 ```
 
 | Layer | Files | Depends on | Must not depend on |
