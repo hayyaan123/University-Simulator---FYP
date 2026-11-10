@@ -203,11 +203,13 @@ Our supervisor asked for a thought experiment: what would a student have to do t
 | 4 | Energy never reached zero | Fixed: ten active hours now empty a student |
 | 5 | A student with no energy still attended 57% of the time | Fixed: the skip chance reaches 100% at zero energy |
 | 6 | **Deadline clustering does not change the end-of-semester stress average.** The same deadlines add the same total whenever they fall | Open. It should show in peak stress once food stops and breaks let stress fall between deadlines. Check again after the errand planner is built |
-| 7 | **No late arrivals in any check run**, even with the gap at 0. Walks on this campus are short | Open. Hayyaan and Shuyu to check walking distances; the gap may only matter through back-to-back classes |
+| 7 | **No late arrivals in any check run**, even with the gap at 0. Walks on this campus are short | Changed in PR #11 (2026-11-09), values still to confirm. The map distances were right: the longest walk between two teaching buildings is 262 m, about 3 minutes at 80 m/min. PR #11 multiplies walking distances by 3.5, lowers walking speed to 60 m/min and lowers "late after" to 2 minutes, so that walk now takes about 15 minutes. At the default settings 2.8% of attended classes are now late arrivals (7.5% with the gap at 0, none with the gap at 30). The three values are assumptions with no source yet |
 
 ## First check runs
 
 One 12-week semester, 500 students, seed 42, run headless on 2026-10-02. Study and food stops are not built yet, so grades can't go much above 50 and nothing lowers stress.
+
+**These numbers are from before PR #11** (walking speed 80 m/min, late after 5 minutes, no distance multiplier). With the PR #11 values the default run gives 88.6% attendance, 44.0 grades and 62.8 stress, and the gap-0 run gives 88.0%, 48.8 and 68.1. Run the whole table again once the team has confirmed the walking values.
 
 | Scenario | Attendance | Grades | Stress (end) | Energy (end of day) |
 | --- | --- | --- | --- | --- |

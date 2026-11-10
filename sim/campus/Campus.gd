@@ -203,18 +203,14 @@ func scenery_outlines() -> Array[PackedVector2Array]:
 
 
 ## Walking time in minutes between two buildings at the current walking speed.
+## The map distance is flat, so it is scaled by FixedSettings.NAVIGATION_MULTIPLIER
+## to allow for stairs, lifts and corridors inside buildings.
 ## Subclasses and tests may override this; SimEngine only calls this method.
 func travel_minutes(from_building: StringName, to_building: StringName) -> float:
 	if from_building == to_building:
 		return 0.0
-	
-	# Apply a navigation multiplier to the flat 2D distance. This accounts for stairs,
-	# elevators, crowds, and complex indoor corridors, forcing the travel time into
-	# a realistic 12-18 minute window to properly trigger lateness limits.
-	var NAVIGATION_MULTIPLIER: float = 3.5
-	var real_distance_m: float = distance_m(from_building, to_building) * NAVIGATION_MULTIPLIER
-	
-	return real_distance_m / FixedSettings.WALKING_SPEED_M_PER_MIN
+	var walked_m: float = distance_m(from_building, to_building) * FixedSettings.NAVIGATION_MULTIPLIER
+	return walked_m / FixedSettings.WALKING_SPEED_M_PER_MIN
 
 
 func _clear() -> void:

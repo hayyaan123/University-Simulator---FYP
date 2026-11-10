@@ -69,9 +69,10 @@ The sim needs these, but they aren't experiment levers. Each becomes a named con
 
 | Setting | Value | In code as |
 | --- | --- | --- |
-| Walking speed | 80 m/min. A small spread per student is still to add | `FixedSettings.WALKING_SPEED_M_PER_MIN` |
+| Walking speed | 60 m/min (was 80 until PR #11). Assumption, not confirmed by the team. A small spread per student is still to add | `FixedSettings.WALKING_SPEED_M_PER_MIN` |
+| Walking distance multiplier | 3.5 ×. The map is flat, so map distances are scaled up for stairs, lifts and corridors. Added in PR #11. Assumption, not confirmed by the team | `FixedSettings.NAVIGATION_MULTIPLIER` |
 | Leave early by | 5 min | `FixedSettings.LEAVE_EARLY_MINUTES` |
-| Late after | 5 min | `FixedSettings.LATE_AFTER_MINUTES` |
+| Late after | 2 min (was 5 until PR #11). Assumption, not confirmed by the team | `FixedSettings.LATE_AFTER_MINUTES` |
 | Too late to enter | 20 min | `FixedSettings.TOO_LATE_MINUTES` |
 | Early start | A first class before 09:00 counts as early | `FixedSettings.EARLY_START_REFERENCE_HOUR` |
 | Commute spread | Each student's commute is 50% to 150% of the average | `FixedSettings.COMMUTE_SPREAD` |

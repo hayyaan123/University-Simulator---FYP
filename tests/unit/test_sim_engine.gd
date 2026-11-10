@@ -147,6 +147,31 @@ func test_too_late_to_enter_gives_no_hours_and_no_rest() -> void:
 	assert_almost_eq(student.energy, expected_energy, 0.0001)
 	assert_almost_eq(student.stress, StateEffects.START_STRESS + _effect(StateEffects.ATTENDED_CLASS_HOUR, &"stress") + _effect(StateEffects.ARRIVED_LATE, &"stress"), 0.0001)
 
+
+func test_skipping_gives_no_hours_and_no_stress() -> void:
+	var student: Student = _run([
+		_session(1, &"B1", 9, 0, 60.0),
+	] as Array[ClassSession], FixedDecision.new(DecisionModel.Action.SKIP_NEXT))
+	assert_eq(student.hours_put_in(&"FIT0001"), 0.0)
+	assert_eq(student.stress, StateEffects.START_STRESS)
+	assert_eq(student.energy, StateEffects.START_ENERGY)
+
+
+func test_back_to_back_classes_cost_extra() -> void:
+	var back_to_back: Student = _run([
+		_session(1, &"B1", 9, 0, 50.0),
+		_session(2, &"B1", 10, 0, 50.0),
+	] as Array[ClassSession])
+	var with_a_break: Student = _run([
+		_session(1, &"B1", 9, 0, 50.0),
+		_session(2, &"B1", 11, 0, 50.0),
+	] as Array[ClassSession])
+	assert_almost_eq(back_to_back.stress - with_a_break.stress,
+		_effect(StateEffects.BACK_TO_BACK_CLASS, &"stress"), 0.0001)
+	assert_almost_eq(back_to_back.energy - with_a_break.energy,
+		_effect(StateEffects.BACK_TO_BACK_CLASS, &"energy"), 0.0001)
+
+
 func test_energy_is_restored_overnight_but_stress_carries_over() -> void:
 	Params.set_value(&"days_to_simulate", 2)
 	var tuesday: ClassSession = ClassSession.new(2, &"FIT0001", ClassSession.Kind.LECTURE, &"R2", &"B1", SimTime.at(1, 9, 0), 60.0, 100)
