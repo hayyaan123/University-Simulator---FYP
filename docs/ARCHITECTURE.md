@@ -108,7 +108,7 @@ Planned: an `ON_ERRAND` activity between `WAITING` and `TRAVELLING`, for food st
 ### The core rules (SimEngine)
 
 1. **When to decide.** For the next class, `decide_at = max(now, class.start − travel − LEAVE_EARLY_MINUTES)`. Students aim to arrive a few minutes early. This and the two lateness limits below are in `FixedSettings`.
-2. **Travel.** `travel = campus.travel_minutes(from, to)` = shortest-path distance ÷ walking speed (× crowding later). If `decide_at` is already past, the student leaves now. **This is how back-to-back classes in far-apart buildings cause lateness.**
+2. **Travel.** `travel = campus.travel_minutes(from, to)` = shortest-path distance × `NAVIGATION_MULTIPLIER` ÷ walking speed (× crowding later). The multiplier allows for stairs, lifts and corridors, which the flat map doesn't have. If `decide_at` is already past, the student leaves now. **This is how back-to-back classes in far-apart buildings cause lateness.**
 3. **On arrival.** `minutes_late = max(0, arrive − start)`.
    - `minutes_late > TOO_LATE_MINUTES`, or the class has already ended → too late: counts as a skip (`too_late`).
    - `minutes_late > LATE_AFTER_MINUTES` → attended but late.
