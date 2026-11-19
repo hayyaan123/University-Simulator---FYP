@@ -6,11 +6,20 @@ extends RefCounted
 ## Sources and reasoning are in docs/PARAMETERS.md and docs/STUDENT_MODEL.md. A
 ## value with no source named here is still a placeholder (Arya).
 
-## Average walking speed, about 1.3 m/s. Lowered to account for stairs, crowds, and packing up.
+## Walking speed, 1.0 m/s. Lowered from 80 m/min (about 1.3 m/s) in PR #11 to
+## allow for stairs, crowds and packing up. Assumption: no source yet, and the
+## team has not confirmed it (docs/ROADMAP.md, open decisions).
 const WALKING_SPEED_M_PER_MIN: float = 60.0
+## Walking distances on the map are multiplied by this to get the distance a
+## student really covers. The map is flat: it has no stairs, lifts or corridors
+## inside buildings. Assumption: 3.5 was chosen in PR #11 so that the longest
+## walk between two teaching buildings (262 m) takes about 15 minutes. No source
+## yet, and the team has not confirmed it.
+const NAVIGATION_MULTIPLIER: float = 3.5
 ## Students aim to arrive this many minutes before a class starts.
 const LEAVE_EARLY_MINUTES: float = 5.0
-## An arrival counts as late after this many minutes. Reduced to trigger lateness accurately.
+## An arrival counts as late after this many minutes. Lowered from 5 in PR #11.
+## Assumption: no source yet, and the team has not confirmed it.
 const LATE_AFTER_MINUTES: float = 2.0
 ## A student this late cannot enter, and the class counts as missed.
 const TOO_LATE_MINUTES: float = 20.0

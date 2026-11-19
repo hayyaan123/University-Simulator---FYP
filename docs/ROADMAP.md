@@ -117,7 +117,7 @@ If time runs short, cut in this order: path closures, the Trimester preset, year
 - [ ] The six extreme cases in `docs/STUDENT_MODEL.md`: confirm or change the answers
 - [ ] Grades: is "knowledge" a separate hidden value, or is it what the grades state already means? As built, it is what the grades state means (our supervisor is fine with either and wants as few hidden values as possible)
 - [ ] Deadline clustering does not change the end-of-semester stress average, only when stress peaks. Is peak stress in the report enough, or does it need the "several deadlines in the same week" row?
-- [ ] No student arrives late in the check runs, even with no gap between slots. Are the walking distances right?
+- [ ] Walking values from PR #11: distances × 3.5, walking speed 60 m/min, late after 2 minutes. They make students arrive late, but none has a source yet. Confirm or change each one, with a source or a stated assumption (finding 7 in `docs/STUDENT_MODEL.md`)
 - [ ] Which part of the sim uses AI
 - [ ] Does the app show the campus as "Monash University Malaysia", or a neutral name?
 - [ ] Do we commit Godot's `.gd.uid` files? (Godot 4.4 and later recommends it)

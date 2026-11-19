@@ -56,15 +56,26 @@ func test_path_points_include_bends_in_the_right_direction() -> void:
 
 func test_travel_minutes_uses_walking_speed() -> void:
 	var campus: Campus = _load_small()
-	var expected: float = (campus.distance_m(&"A", &"B") * 3.5) / FixedSettings.WALKING_SPEED_M_PER_MIN
+	var expected: float = (campus.distance_m(&"A", &"B") * FixedSettings.NAVIGATION_MULTIPLIER
+		/ FixedSettings.WALKING_SPEED_M_PER_MIN)
 	assert_gt(expected, 0.0)
 	assert_almost_eq(campus.travel_minutes(&"A", &"B"), expected, 0.001)
+	assert_eq(campus.travel_minutes(&"B", &"B"), 0.0, "no walk inside the same building")
 
 func test_rooms() -> void:
 	var campus: Campus = _load_small()
 	assert_eq(campus.room_building(&"C-T1"), &"C")
 	assert_eq(campus.room_capacity(&"B-LT1"), 200)
 	assert_eq(campus.rooms_of_type(&"lecture_hall"), [&"B-LT1"] as Array[StringName])
+
+func test_unreachable_building_is_an_error() -> void:
+	var broken: Dictionary = small.duplicate(true)
+	broken["buildings"].append({"id": "D", "position": [500, 500]})
+	var campus: Campus = Campus.new()
+	assert_eq(campus.load_from_dict(broken), ERR_INVALID_DATA)
+	# The loader reports the problem with push_error. Tell GUT it is expected.
+	assert_push_error("can't be reached")
+
 
 func test_real_campus_loads_and_every_building_is_reachable() -> void:
 	var campus: Campus = Campus.new()
